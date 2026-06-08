@@ -1,0 +1,27 @@
+version: '3.9'
+
+# Development override — mounts source for live reload
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: npm run dev
+    volumes:
+      - ./backend/src:/app/src
+    environment:
+      - NODE_ENV=development
+    ports:
+      - '5000:5000'
+
+  frontend-web:
+    image: node:20-alpine
+    working_dir: /app
+    command: npm start
+    volumes:
+      - ./frontend-web:/app
+      - /app/node_modules
+    ports:
+      - '3000:3000'
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000

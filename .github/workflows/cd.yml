@@ -1,0 +1,28 @@
+name: CD – Deploy to Render
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+
+    steps:
+      - name: Trigger Render deploy – Backend
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND != '' }}
+        run: |
+          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
+          echo "Backend deploy triggered"
+
+      - name: Trigger Render deploy – Web Frontend
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_WEB != '' }}
+        run: |
+          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK_WEB }}"
+          echo "Web frontend deploy triggered"
