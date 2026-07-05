@@ -70,7 +70,10 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
-      <footer className="footer" />
+      <footer className="footer">
+        <span>RideLoop frontend mock</span>
+        <span>Built for Person B tasks with backend-ready UI flows.</span>
+      </footer>
     </div>
   );
 }
