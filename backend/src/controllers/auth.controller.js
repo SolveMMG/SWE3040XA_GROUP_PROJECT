@@ -15,11 +15,15 @@ const googleCallback = async(req, res, next) => {
     const refreshToken = await tokenService.generateRefreshToken(id);
 
     // Redirect to SPA — frontend reads these from the query string once,
-    // stores the JWT, and discards the URL params.
+    // stores the JWT, bootstraps auth state, then discards the URL params.
     const params = new URLSearchParams({
-      token: accessToken,
+      token:        accessToken,
       refreshToken,
-      userId: id,
+      id:           id,
+      name:         name         || '',
+      email:        email        || '',
+      photoUrl:     photo_url    || '',
+      isNewUser:    isNewUser ? 'true' : 'false',
     });
 
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?${params.toString()}`);
