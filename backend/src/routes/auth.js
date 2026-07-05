@@ -1,7 +1,8 @@
-const express        = require('express');
-const { passport }   = require('../config/passport');
-const authController = require('../controllers/auth.controller');
+const express          = require('express');
+const { passport }     = require('../config/passport');
+const authController   = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth');
+const { rules }        = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/google/callback',
   authController.googleCallback,
 );
 
-router.post('/refresh', authController.refresh);
-router.post('/logout',  authenticate, authController.logout);
+router.post('/refresh', rules.refreshToken, authController.refresh);
+router.post('/logout',  authenticate, rules.refreshToken, authController.logout);
 
 module.exports = router;

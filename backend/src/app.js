@@ -32,16 +32,43 @@ app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
 });
 
+// Handle JSON body parse errors (malformed JSON from client)
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: { code: 'INVALID_JSON', message: 'Request body is not valid JSON' } });
+  }
+  return next(err);
+});
+
 // Central error handler
 app.use((err, _req, res, _next) => {
+  // PostgreSQL unique-violation → 409 Conflict
+  if (err.code === '23505') {
+    return res.status(409).json({ error: { code: 'CONFLICT', message: 'A record with that value already exists' } });
+  }
+
+  // PostgreSQL foreign-key violation → 400
+  if (err.code === '23503') {
+    return res.status(400).json({ error: { code: 'INVALID_REFERENCE', message: 'Referenced record does not exist' } });
+  }
+
+  // PostgreSQL not-null / check violation → 400
+  if (err.code === '23502' || err.code === '23514') {
+    return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Invalid data provided' } });
+  }
+
   const status = err.status || 500;
+
+  // Don't leak internal details to clients in production
+  const message = (status < 500 || process.env.NODE_ENV !== 'production')
+    ? (err.message || 'Something went wrong')
+    : 'Internal server error';
+
   // eslint-disable-next-line no-console
-  console.error(err);
-  res.status(status).json({
-    error: {
-      code: err.code || 'INTERNAL_ERROR',
-      message: err.message || 'Something went wrong',
-    },
+  if (status >= 500) console.error('[error]', err);
+
+  return res.status(status).json({
+    error: { code: err.code || 'INTERNAL_ERROR', message },
   });
 });
 
