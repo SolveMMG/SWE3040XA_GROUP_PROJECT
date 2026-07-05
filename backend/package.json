@@ -1,7 +1,7 @@
 {
-  "name": "skillswap-backend",
+  "name": "rideconnect-backend",
   "version": "1.0.0",
-  "description": "SkillSwap peer micro-freelance marketplace — backend API",
+  "description": "RideConnect smart carpooling & ride-sharing app — backend API",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

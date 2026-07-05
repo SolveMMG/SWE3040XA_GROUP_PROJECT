@@ -4,7 +4,6 @@ const cors = require('cors');
 const morgan = require('morgan');
 const { init: initPassport } = require('./config/passport');
 
-// Initialise passport Google strategy (requires env vars to be loaded first)
 initPassport();
 
 const app = express();
@@ -17,17 +16,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // API routes
-app.use('/api/v1/auth',      require('./routes/auth'));
-// app.use('/api/v1/users',    require('./routes/users'));    // A7
-// app.use('/api/v1/listings', require('./routes/listings')); // Person C
-// app.use('/api/v1/uploads',  require('./routes/uploads'));  // Person C
-// app.use('/api/v1/inquiries',require('./routes/inquiries'));// Person C
-// app.use('/api/v1/reviews',  require('./routes/reviews'));  // Person C
+app.use('/api/v1/auth',     require('./routes/auth'));
+app.use('/api/v1/users',    require('./routes/users'));
+// app.use('/api/v1/rides',    require('./routes/rides'));     // Person C — C1/C2
+// app.use('/api/v1/uploads',  require('./routes/uploads'));   // Person C — C3
+// app.use('/api/v1/bookings', require('./routes/bookings'));  // Person C — C4/C5
+// app.use('/api/v1/payments', require('./routes/payments'));  // Person C — C6
+// app.use('/api/v1/reviews',  require('./routes/reviews'));   // Person C — C8
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// 404 handler
+// 404
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
 });

@@ -8,12 +8,9 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    // Errors
     'no-console': 'warn',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'no-undef': 'error',
-
-    // Style
     'semi': ['error', 'always'],
     'quotes': ['error', 'single'],
     'indent': ['error', 2],

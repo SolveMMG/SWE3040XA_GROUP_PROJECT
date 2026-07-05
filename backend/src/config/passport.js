@@ -2,11 +2,6 @@ const passport = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const userModel = require('../models/user.model');
 
-/**
- * Call once at server startup (after env vars are loaded).
- * Separated into init() so the module can be required without
- * crashing when GOOGLE_CLIENT_ID is absent in tests / CI.
- */
 const init = () => {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     // eslint-disable-next-line no-console
@@ -27,11 +22,11 @@ const init = () => {
           const name     = profile.displayName;
           const photoUrl = profile.photos?.[0]?.value || null;
 
-          let user = await userModel.findByEmail(email);
+          let user      = await userModel.findByEmail(email);
           let isNewUser = false;
 
           if (!user) {
-            user = await userModel.create({ name, email, photoUrl });
+            user      = await userModel.create({ name, email, photoUrl });
             isNewUser = true;
           }
 
@@ -43,8 +38,7 @@ const init = () => {
     ),
   );
 
-  // Stateless JWT — no session serialization needed
-  passport.serializeUser((user, done) => done(null, user));
+  passport.serializeUser((user, done)   => done(null, user));
   passport.deserializeUser((user, done) => done(null, user));
 };
 
