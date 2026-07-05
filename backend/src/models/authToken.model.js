@@ -21,4 +21,14 @@ const findByHash = async(tokenHash) => {
 const revoke    = async(tokenHash) => db.query('DELETE FROM auth_tokens WHERE token_hash = $1', [tokenHash]);
 const revokeAll = async(userId)    => db.query('DELETE FROM auth_tokens WHERE user_id = $1',    [userId]);
 
-module.exports = { create, findByHash, revoke, revokeAll };
+/**
+ * Delete all expired refresh tokens from the DB.
+ * Called every 24 h and on each new login to keep the table lean.
+ * Returns the number of rows pruned.
+ */
+const cleanupExpired = async() => {
+  const { rowCount } = await db.query('DELETE FROM auth_tokens WHERE expires_at <= NOW()');
+  return rowCount;
+};
+
+module.exports = { create, findByHash, revoke, revokeAll, cleanupExpired };

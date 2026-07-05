@@ -9,6 +9,9 @@ const googleCallback = async(req, res, next) => {
     const accessToken  = tokenService.generateAccessToken(id, email);
     const refreshToken = await tokenService.generateRefreshToken(id);
 
+    // Prune any expired tokens on each login — fire-and-forget, non-blocking
+    authTokenModel.cleanupExpired().catch(() => {});
+
     const params = new URLSearchParams({
       token: accessToken,
       refreshToken,
