@@ -2,6 +2,10 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
+const { init: initPassport } = require('./config/passport');
+
+// Initialise passport Google strategy (requires env vars to be loaded first)
+initPassport();
 
 const app = express();
 
@@ -12,13 +16,13 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// API routes (mounted as features are built)
-// app.use('/api/v1/auth',     require('./routes/auth'));
-// app.use('/api/v1/users',    require('./routes/users'));
-// app.use('/api/v1/listings', require('./routes/listings'));
-// app.use('/api/v1/uploads',  require('./routes/uploads'));
-// app.use('/api/v1/inquiries',require('./routes/inquiries'));
-// app.use('/api/v1/reviews',  require('./routes/reviews'));
+// API routes
+app.use('/api/v1/auth',      require('./routes/auth'));
+// app.use('/api/v1/users',    require('./routes/users'));    // A7
+// app.use('/api/v1/listings', require('./routes/listings')); // Person C
+// app.use('/api/v1/uploads',  require('./routes/uploads'));  // Person C
+// app.use('/api/v1/inquiries',require('./routes/inquiries'));// Person C
+// app.use('/api/v1/reviews',  require('./routes/reviews'));  // Person C
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
