@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend — lint
+    name: Backend — quality
     runs-on: ubuntu-latest
 
     steps:
@@ -25,12 +25,12 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Lint
+      - name: Quality checks
         working-directory: backend
-        run: npm run lint
+        run: npm run quality
 
   frontend:
-    name: Frontend — build
+    name: Frontend — quality
     runs-on: ubuntu-latest
 
     steps:
@@ -46,5 +46,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Quality checks
+        run: npm run build && npm test
