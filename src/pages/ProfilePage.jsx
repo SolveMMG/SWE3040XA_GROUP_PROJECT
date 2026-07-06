@@ -1,75 +1,79 @@
-import { Camera, Save } from 'lucide-react';
-import { useState } from 'react';
+import { Camera, Save, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import StarRating from '../components/StarRating.jsx';
-import { reviews } from '../data/mockData.js';
+import api from '../services/api';
 import { useAuth } from '../state/AuthContext.jsx';
 
 export default function ProfilePage() {
-  const { currentUser, updateUser } = useAuth();
-  const isDriver = currentUser.role === 'driver';
-  const [form, setForm] = useState({
-    name: currentUser.name,
-    bio: currentUser.bio,
-    skills: currentUser.skills.join(', '),
-    photoUrl: currentUser.photoUrl,
-  });
-  const [rating, setRating] = useState(5);
-  const [reviewText, setReviewText] = useState('');
-  const [localReviews, setLocalReviews] = useState(reviews);
+  const { currentUser, refreshUser } = useAuth();
+  const [form, setForm] = useState({ name: currentUser?.name || '', bio: currentUser?.bio || '' });
+  const [reviews, setReviews] = useState([]);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  const isDriver = currentUser?.role === 'driver';
+
+  useEffect(() => {
+    if (isDriver && currentUser?.id) {
+      api
+        .get('/reviews', { params: { driverId: currentUser.id } })
+        .then(({ data }) => setReviews(data.reviews || []))
+        .catch(() => {});
+    }
+  }, [isDriver, currentUser?.id]);
 
   const updateField = (field, value) => {
     setSaved(false);
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((f) => ({ ...f, [field]: value }));
   };
 
-  const saveProfile = (event) => {
+  const saveProfile = async (event) => {
     event.preventDefault();
-    updateUser({
-      ...form,
-      skills: form.skills
-        .split(',')
-        .map((skill) => skill.trim())
-        .filter(Boolean),
-    });
-    setSaved(true);
+    setError('');
+    try {
+      await api.put('/users/me', form);
+      await refreshUser();
+      setSaved(true);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Could not save profile.');
+    }
   };
 
-  const addReview = (event) => {
-    event.preventDefault();
-    if (!reviewText.trim()) return;
-    setLocalReviews((current) => [
-      { id: crypto.randomUUID(), author: currentUser.name, rating, text: reviewText.trim() },
-      ...current,
-    ]);
-    setReviewText('');
-    setRating(5);
+  const uploadPhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError('');
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const { data } = await api.post('/uploads/image', formData);
+      await api.put('/users/me', { photo_url: data.url });
+      await refreshUser();
+    } catch {
+      setError('Photo upload failed.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <section className="page profile-page">
       <div className="profile-hero glass">
-        {form.photoUrl ? (
-          <img src={form.photoUrl} alt="" className="profile-photo" />
+        {currentUser?.photo_url ? (
+          <img src={currentUser.photo_url} alt="" className="profile-photo" />
         ) : (
           <div className="profile-photo photo-empty">
             <Camera size={34} />
           </div>
         )}
         <div>
-          <span className="eyebrow">{isDriver ? 'Driver profile' : 'Customer profile'}</span>
-          <h1>{form.name}</h1>
-          <p>
-            {form.bio ||
-              (isDriver
-                ? 'Add a short bio so other riders know who they are sharing the trip with.'
-                : 'Add a short bio so others can learn more about you on the platform.')}
-          </p>
-          <StarRating value={Math.round(currentUser.rating || 0)} label="Profile rating" />
-          <div className="detail-list">
-            <span>{isDriver ? 'Driver account' : 'Customer account'}</span>
-            <span>{currentUser.phone}</span>
-          </div>
+          <span className="eyebrow">{isDriver ? 'Driver profile' : 'Passenger profile'}</span>
+          <h1>{currentUser?.name}</h1>
+          <p>{currentUser?.bio || 'No bio yet.'}</p>
+          <StarRating value={Math.round(Number(currentUser?.avg_rating) || 0)} label="Profile rating" />
         </div>
       </div>
 
@@ -78,74 +82,59 @@ export default function ProfilePage() {
           <h2>Edit profile</h2>
           <label>
             Display name
-            <input value={form.name} onChange={(event) => updateField('name', event.target.value)} />
+            <input value={form.name} onChange={(e) => updateField('name', e.target.value)} />
           </label>
           <label>
             Bio
-            <textarea value={form.bio} onChange={(event) => updateField('bio', event.target.value)} rows="4" />
+            <textarea value={form.bio} onChange={(e) => updateField('bio', e.target.value)} rows="4" />
           </label>
-          <label>
-            Skills and trust tags
-            <input value={form.skills} onChange={(event) => updateField('skills', event.target.value)} />
-          </label>
-          <label>
-            Profile photo URL
-            <span className="input-with-icon">
-              <Camera size={18} />
-              <input value={form.photoUrl} onChange={(event) => updateField('photoUrl', event.target.value)} />
-            </span>
-          </label>
+          <div>
+            <button
+              type="button"
+              className="button ghost"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+            >
+              <Upload size={18} />
+              {uploading ? 'Uploading...' : 'Upload photo'}
+            </button>
+            <input
+              type="file"
+              ref={fileRef}
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={uploadPhoto}
+            />
+          </div>
           <button type="submit" className="button">
             <Save size={18} />
             Save profile
           </button>
-          {saved && <div className="state-bar success">Profile updated locally.</div>}
+          {saved && <div className="state-bar success">Profile saved.</div>}
+          {error && <div className="state-bar danger">{error}</div>}
         </form>
 
-        <div className="reviews-column">
-          <div className="role-summary glass">
-            <h2>{isDriver ? 'Driver details' : 'Customer preferences'}</h2>
-            {isDriver ? (
-              <>
-                <p>Vehicle: {currentUser.driverProfile?.vehicle}</p>
-                <p>Plate: {currentUser.driverProfile?.licensePlate}</p>
-                <p>Seats: {currentUser.driverProfile?.seats}</p>
-              </>
-            ) : (
-              <>
-                <p>Home area: {currentUser.customerProfile?.homeArea}</p>
-                <p>Payment preference: {currentUser.customerProfile?.preferredPayment}</p>
-              </>
-            )}
-          </div>
-          {isDriver ? (
+        {isDriver && (
+          <div className="reviews-column">
             <div className="review-list">
-              {localReviews.map((review) => (
-                <article className="review-card glass" key={review.id}>
-                  <div className="card-topline">
-                    <strong>{review.author}</strong>
-                    <StarRating value={review.rating} label={`${review.author} rating`} />
-                  </div>
-                  <p>{review.text}</p>
-                </article>
-              ))}
+              {reviews.length === 0 ? (
+                <div className="empty-state glass" style={{ padding: '1.5rem' }}>
+                  <p>No reviews yet.</p>
+                </div>
+              ) : (
+                reviews.map((rev) => (
+                  <article className="review-card glass" key={rev.id}>
+                    <div className="card-topline">
+                      <strong>{rev.reviewer?.name || 'Passenger'}</strong>
+                      <StarRating value={rev.rating} label="Rating" />
+                    </div>
+                    <p>{rev.comment}</p>
+                  </article>
+                ))
+              )}
             </div>
-          ) : (
-            <form className="review-form glass" onSubmit={addReview}>
-              <h2>Leave a review</h2>
-              <StarRating value={rating} onChange={setRating} label="New review rating" />
-              <textarea
-                value={reviewText}
-                onChange={(event) => setReviewText(event.target.value)}
-                placeholder="Share what made the ride work well..."
-                rows="4"
-              />
-              <button type="submit" className="button">
-                Submit review
-              </button>
-            </form>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );

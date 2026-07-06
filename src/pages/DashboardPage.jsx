@@ -1,6 +1,7 @@
-import { CarFront, ClipboardList, MapPinned, Plus, ShieldCheck, Star, WalletCards } from 'lucide-react';
+import { CarFront, ClipboardList, MapPinned, Plus, ShieldCheck, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { inquiries, rides } from '../data/mockData.js';
+import api from '../services/api';
 import { useAuth } from '../state/AuthContext.jsx';
 
 function DashboardCard({ icon, label, value }) {
@@ -8,43 +9,57 @@ function DashboardCard({ icon, label, value }) {
     <div className="dashboard-card glass">
       <span className="dashboard-icon">{icon}</span>
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong>{value ?? '—'}</strong>
     </div>
   );
 }
 
 export default function DashboardPage() {
   const { currentUser } = useAuth();
-  const isDriver = currentUser.role === 'driver';
+  const isDriver = currentUser?.role === 'driver';
+  const [stats, setStats] = useState({ rides: null, bookings: null, pending: null });
+
+  useEffect(() => {
+    Promise.all([api.get('/rides'), api.get('/bookings')])
+      .then(([ridesRes, bookingsRes]) => {
+        const rides = ridesRes.data.rides || [];
+        const bookings = bookingsRes.data.bookings || [];
+        setStats({
+          rides: rides.length,
+          bookings: bookings.length,
+          pending: bookings.filter((b) => b.status === 'pending').length,
+        });
+      })
+      .catch(() => {});
+  }, [isDriver]);
+
+  const avgRating = currentUser?.avg_rating
+    ? `${Number(currentUser.avg_rating).toFixed(1)} ★`
+    : 'New';
 
   const driverCards = [
-    { label: 'Active ride offers', value: rides.length, icon: <CarFront size={22} /> },
-    { label: 'Pending requests', value: inquiries.received.filter((item) => item.status === 'Pending').length, icon: <ClipboardList size={22} /> },
-    { label: 'Average rating', value: currentUser.rating || 'New', icon: <Star size={22} /> },
+    { label: 'Your ride offers', value: stats.rides, icon: <CarFront size={22} /> },
+    { label: 'Pending requests', value: stats.pending, icon: <ClipboardList size={22} /> },
+    { label: 'Average rating', value: avgRating, icon: <Star size={22} /> },
   ];
 
-  const customerCards = [
-    { label: 'Available rides', value: rides.length, icon: <MapPinned size={22} /> },
-    { label: 'Sent inquiries', value: inquiries.sent.length, icon: <ClipboardList size={22} /> },
-    { label: 'Payment method', value: currentUser.customerProfile?.preferredPayment || 'Not set', icon: <WalletCards size={22} /> },
+  const passengerCards = [
+    { label: 'Available rides', value: stats.rides, icon: <MapPinned size={22} /> },
+    { label: 'Your bookings', value: stats.bookings, icon: <ClipboardList size={22} /> },
+    { label: 'Average rating', value: avgRating, icon: <Star size={22} /> },
   ];
 
   return (
     <section className="page dashboard-page">
       <div className="section-heading">
         <div>
-          <span className="eyebrow">{isDriver ? 'Driver dashboard' : 'Customer dashboard'}</span>
+          <span className="eyebrow">{isDriver ? 'Driver dashboard' : 'Passenger dashboard'}</span>
           <h1>{isDriver ? 'Manage your rides and requests.' : 'Find rides and track your trips.'}</h1>
-          <p className="dashboard-copy">
-            {isDriver
-              ? 'Your driver tools focus on publishing rides, reviewing incoming inquiries, and keeping vehicle details current.'
-              : 'Your customer tools focus on searching for rides, sending inquiries, and managing trip activity.'}
-          </p>
         </div>
       </div>
 
       <div className="dashboard-grid">
-        {(isDriver ? driverCards : customerCards).map((card) => (
+        {(isDriver ? driverCards : passengerCards).map((card) => (
           <DashboardCard key={card.label} {...card} />
         ))}
       </div>
@@ -52,11 +67,11 @@ export default function DashboardPage() {
       <div className="dashboard-actions glass">
         <div>
           <ShieldCheck size={24} />
-          <h2>{isDriver ? 'Driver functions' : 'Customer functions'}</h2>
+          <h2>{isDriver ? 'Driver functions' : 'Passenger functions'}</h2>
           <p>
             {isDriver
-              ? 'Offer a new ride, respond to rider inquiries, or update your driver profile details.'
-              : 'Browse available rides, check inquiry status, or update your customer profile.'}
+              ? 'Offer a new ride, respond to passenger requests, or update your driver profile.'
+              : 'Browse available rides, check booking status, or update your profile.'}
           </p>
         </div>
         <div className="action-row">
@@ -66,7 +81,7 @@ export default function DashboardPage() {
                 <Plus size={18} />
                 Offer ride
               </Link>
-              <Link to="/inquiries" className="button ghost">
+              <Link to="/bookings" className="button ghost">
                 Ride requests
               </Link>
               <Link to="/profile" className="button ghost">
@@ -78,11 +93,11 @@ export default function DashboardPage() {
               <Link to="/" className="button">
                 Browse rides
               </Link>
-              <Link to="/inquiries" className="button ghost">
-                My inquiries
+              <Link to="/bookings" className="button ghost">
+                My bookings
               </Link>
               <Link to="/profile" className="button ghost">
-                Customer profile
+                My profile
               </Link>
             </>
           )}

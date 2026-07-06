@@ -14,11 +14,11 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header className="topbar glass">
-        <NavLink to="/" className="brand" aria-label="RideLoop home">
+        <NavLink to="/" className="brand" aria-label="RideConnect home">
           <span className="brand-icon">
             <CarFront size={22} />
           </span>
-          <span>RideLoop</span>
+          <span>RideConnect</span>
         </NavLink>
         <nav className="nav-links" aria-label="Main navigation">
           {isAuthenticated && (
@@ -37,10 +37,12 @@ export default function Layout() {
               Offer ride
             </NavLink>
           )}
-          <NavLink to="/inquiries">
-            <ClipboardList size={18} />
-            {currentUser?.role === 'driver' ? 'Ride requests' : 'My inquiries'}
-          </NavLink>
+          {isAuthenticated && (
+            <NavLink to="/bookings">
+              <ClipboardList size={18} />
+              {currentUser?.role === 'driver' ? 'Ride requests' : 'My bookings'}
+            </NavLink>
+          )}
           <NavLink to="/profile">
             <CircleUserRound size={18} />
             Profile
@@ -49,10 +51,10 @@ export default function Layout() {
         <div className="account-actions">
           {isAuthenticated ? (
             <>
-              {currentUser.photoUrl ? (
-                <img src={currentUser.photoUrl} alt="" className="avatar" />
+              {currentUser?.photo_url ? (
+                <img src={currentUser.photo_url} alt="" className="avatar" />
               ) : (
-                <span className="avatar initials" aria-label={currentUser.name}>
+                <span className="avatar initials" aria-label={currentUser?.name}>
                   {initials}
                 </span>
               )}
@@ -71,8 +73,8 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        <span>RideLoop frontend mock</span>
-        <span>Built for Person B tasks with backend-ready UI flows.</span>
+        <span>RideConnect</span>
+        <span>Smart carpooling for USIU-Africa</span>
       </footer>
     </div>
   );
