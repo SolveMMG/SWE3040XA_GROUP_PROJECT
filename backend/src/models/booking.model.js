@@ -51,7 +51,7 @@ const create = async({ rideId, passengerId, driverId, seatsRequested, totalPrice
 
 const updateStatus = async(id, status) => {
   await db.query(
-    `UPDATE bookings SET status = $1::booking_status WHERE id = $2`,
+    'UPDATE bookings SET status = $1::booking_status WHERE id = $2',
     [status, id],
   );
   return findById(id);

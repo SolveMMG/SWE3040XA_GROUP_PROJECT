@@ -30,7 +30,7 @@ const findAll = async({ origin, destination, date, page = 1, limit = 20 }) => {
   if (date)        { conds.push(`r.departure_time::date = $${idx++}::date`); vals.push(date); }
 
   // Only show active rides by default
-  conds.push(`r.status = 'active'`);
+  conds.push('r.status = \'active\'');
 
   const where = `WHERE ${conds.join(' AND ')}`;
 

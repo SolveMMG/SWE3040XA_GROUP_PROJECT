@@ -11,7 +11,7 @@ const findByBookingId = async(bookingId) => {
 
 const findByCheckoutRequestId = async(checkoutRequestId) => {
   const { rows } = await db.query(
-    `SELECT id, booking_id, amount, status FROM payments WHERE checkout_request_id = $1`,
+    'SELECT id, booking_id, amount, status FROM payments WHERE checkout_request_id = $1',
     [checkoutRequestId],
   );
   return rows[0] || null;
@@ -41,7 +41,7 @@ const markPaid = async({ checkoutRequestId, mpesaRef }) => {
 
 const markFailed = async(checkoutRequestId) => {
   await db.query(
-    `UPDATE payments SET status = 'failed' WHERE checkout_request_id = $1`,
+    'UPDATE payments SET status = \'failed\' WHERE checkout_request_id = $1',
     [checkoutRequestId],
   );
 };
