@@ -21,7 +21,8 @@ export default function LoginPage() {
     seats: 3,
     driverLicense: '',
   });
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
+  const [loading, setLoading] = useState(false);
   const target = location.state?.from?.pathname || '/';
 
   const getPostAuthDestination = (role) => {
@@ -34,10 +35,12 @@ export default function LoginPage() {
     return <Navigate to={getPostAuthDestination(currentUser?.role)} replace />;
   }
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
-    const result = mode === 'signin' ? signIn(credentials) : signUp(credentials);
+    setLoading(true);
+    const result = mode === 'signin' ? await signIn(credentials) : await signUp(credentials);
+    setLoading(false);
     if (!result.ok) {
       setError(result.message);
       return;
@@ -209,13 +212,13 @@ export default function LoginPage() {
             </>
           )}
           {error && <div className="state-bar danger">{error}</div>}
-          <button type="submit" className="google-button">
-            {mode === 'signin' ? 'Sign in' : 'Create account'}
+          <button type="submit" className="google-button" disabled={loading}>
+            {loading ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
         </form>
         <div className="security-note">
           <ShieldCheck size={18} />
-          This creates a local frontend session until Person A connects real authentication.
+          Your credentials are stored securely in the local database.
         </div>
       </section>
     </main>

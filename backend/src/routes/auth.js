@@ -5,6 +5,11 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Local auth
+router.post('/register', authController.register);
+router.post('/login',    authController.login);
+
+// Google OAuth
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'], session: false }),
 );
