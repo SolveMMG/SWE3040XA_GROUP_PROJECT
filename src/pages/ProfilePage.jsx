@@ -6,7 +6,13 @@ import { useAuth } from '../state/AuthContext.jsx';
 
 export default function ProfilePage() {
   const { currentUser, refreshUser } = useAuth();
-  const [form, setForm] = useState({ name: currentUser?.name || '', bio: currentUser?.bio || '' });
+  const [form, setForm] = useState({
+    name:          currentUser?.name          || '',
+    bio:           currentUser?.bio           || '',
+    carType:       currentUser?.carType       || '',
+    licensePlate:  currentUser?.licensePlate  || '',
+    licenseNumber: currentUser?.licenseNumber || '',
+  });
   const [reviews, setReviews] = useState([]);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +25,7 @@ export default function ProfilePage() {
     if (isDriver && currentUser?.id) {
       api
         .get('/reviews', { params: { driverId: currentUser.id } })
-        .then(({ data }) => setReviews(data.reviews || []))
+        .then(({ data }) => setReviews(Array.isArray(data) ? data : []))
         .catch(() => {});
     }
   }, [isDriver, currentUser?.id]);
@@ -88,6 +94,22 @@ export default function ProfilePage() {
             Bio
             <textarea value={form.bio} onChange={(e) => updateField('bio', e.target.value)} rows="4" />
           </label>
+          {isDriver && (
+            <>
+              <label>
+                Car type
+                <input value={form.carType} onChange={(e) => updateField('carType', e.target.value)} placeholder="e.g. Toyota Fielder" />
+              </label>
+              <label>
+                Number plate
+                <input value={form.licensePlate} onChange={(e) => updateField('licensePlate', e.target.value)} placeholder="e.g. KCA 123A" />
+              </label>
+              <label>
+                Driver's license number
+                <input value={form.licenseNumber} onChange={(e) => updateField('licenseNumber', e.target.value)} placeholder="e.g. DL123456" />
+              </label>
+            </>
+          )}
           <div>
             <button
               type="button"

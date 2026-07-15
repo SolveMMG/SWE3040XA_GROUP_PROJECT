@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
   const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get('/users/me');
-      const user = data.user;
+      const user = data;
       localStorage.setItem('rc_user', JSON.stringify(user));
       setCurrentUser(user);
       return user;

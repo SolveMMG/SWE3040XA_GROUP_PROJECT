@@ -19,7 +19,7 @@ export default function ListingDetailPage() {
   useEffect(() => {
     api
       .get(`/rides/${rideId}`)
-      .then(({ data }) => setRide(data.ride))
+      .then(({ data }) => setRide(data))
       .catch(() => setFetchError('Ride not found.'))
       .finally(() => setLoading(false));
   }, [rideId]);
@@ -93,11 +93,11 @@ export default function ListingDetailPage() {
             <div className="detail-list">
               <span>
                 <CalendarClock size={18} />
-                {new Date(ride.departure_time).toLocaleString()}
+                {new Date(ride.departureTime).toLocaleString()}
               </span>
               <span>
                 <UsersRound size={18} />
-                {ride.seats_available} seats available
+                {ride.seatsAvailable} seats available
               </span>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function ListingDetailPage() {
           </p>
           <div className="price-box">
             <span>Seat price</span>
-            <strong>KES {ride.price_per_seat}</strong>
+            <strong>KES {ride.pricePerSeat}</strong>
           </div>
 
           {booking ? (

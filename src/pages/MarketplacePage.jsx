@@ -94,11 +94,11 @@ export default function MarketplacePage() {
         <div className="ride-grid">
           {visible.map((ride) => (
             <Link to={`/rides/${ride.id}`} className="ride-card glass" key={ride.id}>
-              {ride.photo_url && <img src={ride.photo_url} alt="" />}
+              {ride.photoUrl && <img src={ride.photoUrl} alt="" />}
               <div className="ride-card-body">
                 <div className="card-topline">
                   <span>{ride.category || 'Commute'}</span>
-                  <strong>KES {ride.price_per_seat}</strong>
+                  <strong>KES {ride.pricePerSeat}</strong>
                 </div>
                 <h2>
                   {ride.origin} → {ride.destination}
@@ -110,11 +110,11 @@ export default function MarketplacePage() {
                   </span>
                   <span>
                     <Clock size={16} />
-                    {new Date(ride.departure_time).toLocaleString()}
+                    {new Date(ride.departureTime).toLocaleString()}
                   </span>
                   <span>
                     <UsersRound size={16} />
-                    {ride.seats_available} seats
+                    {ride.seatsAvailable} seats
                   </span>
                 </div>
               </div>

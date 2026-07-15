@@ -24,8 +24,8 @@ export default function AuthCallbackPage() {
     api
       .get('/users/me')
       .then(({ data }) => {
-        setSession(data.user, accessToken, refreshToken);
-        navigate(data.user.role === 'driver' ? '/dashboard' : '/', { replace: true });
+        setSession(data, accessToken, refreshToken);
+        navigate(data.role === 'driver' ? '/dashboard' : '/', { replace: true });
       })
       .catch(() => navigate('/login', { replace: true }));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

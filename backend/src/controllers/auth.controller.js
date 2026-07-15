@@ -1,6 +1,57 @@
+const bcrypt         = require('bcryptjs');
 const userModel      = require('../models/user.model');
 const authTokenModel = require('../models/authToken.model');
 const tokenService   = require('../services/token.service');
+
+const serializeUser = (u) => ({
+  id:       u.id,
+  name:     u.name,
+  email:    u.email,
+  role:     u.role,
+  photoUrl: u.photo_url || null,
+});
+
+// POST /auth/register
+const register = async(req, res, next) => {
+  try {
+    const { name, email, password, role, carType, licensePlate, licenseNumber } = req.body;
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'name, email, password and role are required' } });
+    }
+    const existing = await userModel.findByEmail(email);
+    if (existing) {
+      return res.status(409).json({ error: { code: 'EMAIL_TAKEN', message: 'An account with that email already exists' } });
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await userModel.create({ name, email, passwordHash, role, carType, licensePlate, licenseNumber });
+    const accessToken  = tokenService.generateAccessToken(user.id, user.email);
+    const refreshToken = await tokenService.generateRefreshToken(user.id);
+    authTokenModel.cleanupExpired().catch(() => {});
+    return res.status(201).json({ token: accessToken, refreshToken, user: serializeUser(user) });
+  } catch (err) { next(err); }
+};
+
+// POST /auth/login
+const login = async(req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'email and password are required' } });
+    }
+    const user = await userModel.findByEmailForAuth(email);
+    if (!user || !user.password_hash) {
+      return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
+    }
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } });
+    }
+    const accessToken  = tokenService.generateAccessToken(user.id, user.email);
+    const refreshToken = await tokenService.generateRefreshToken(user.id);
+    authTokenModel.cleanupExpired().catch(() => {});
+    return res.json({ token: accessToken, refreshToken, user: serializeUser(user) });
+  } catch (err) { next(err); }
+};
 
 const googleCallback = async(req, res, next) => {
   try {
@@ -65,4 +116,4 @@ const logout = async(req, res, next) => {
   }
 };
 
-module.exports = { googleCallback, refresh, logout };
+module.exports = { register, login, googleCallback, refresh, logout };

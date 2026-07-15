@@ -6,6 +6,9 @@ const { rules }        = require('../middleware/validate');
 
 const router = express.Router();
 
+router.post('/register', authController.register);
+router.post('/login',    authController.login);
+
 router.get('/google',
   passport.authenticate('google', { scope: ['profile', 'email'], session: false }),
 );

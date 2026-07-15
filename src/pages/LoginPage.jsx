@@ -1,15 +1,48 @@
+import { useState } from 'react';
 import { CarFront, ShieldCheck } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
+import api from '../services/api';
 import { useAuth } from '../state/AuthContext.jsx';
 
 export default function LoginPage() {
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, currentUser, setSession } = useAuth();
+  const [mode, setMode]         = useState('login');
+  const [name, setName]         = useState('');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole]             = useState('passenger');
+  const [carType, setCarType]       = useState('');
+  const [licensePlate, setLicensePlate]   = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
 
   if (isAuthenticated) {
     return <Navigate to={currentUser?.role === 'driver' ? '/dashboard' : '/'} replace />;
   }
 
   const apiBase = import.meta.env.VITE_API_URL || '/api/v1';
+
+  const switchMode = (m) => { setMode(m); setError(''); };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const endpoint = mode === 'register' ? '/auth/register' : '/auth/login';
+      const payload  = mode === 'register'
+        ? { name, email, password, role,
+            ...(role === 'driver' ? { carType, licensePlate, licenseNumber } : {}) }
+        : { email, password };
+      const { data } = await api.post(endpoint, payload);
+      setSession(data.user, data.token, data.refreshToken);
+    } catch (err) {
+      setError(err.response?.data?.error?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="login-screen">
@@ -21,7 +54,73 @@ export default function LoginPage() {
           <span>RideConnect</span>
         </div>
         <h1>Smart ride sharing, built around trust.</h1>
-        <p>Sign in with your USIU Google account to get started.</p>
+
+        <div className="auth-switch segmented glass">
+          <button type="button" className={mode === 'login'    ? 'chip active' : 'chip'} onClick={() => switchMode('login')}>Sign in</button>
+          <button type="button" className={mode === 'register' ? 'chip active' : 'chip'} onClick={() => switchMode('register')}>Sign up</button>
+        </div>
+
+        <form className="login-form" onSubmit={submit}>
+          {mode === 'register' && (
+            <label>
+              Full name
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" required />
+            </label>
+          )}
+
+          <label>
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+          </label>
+
+          <label>
+            Password
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+          </label>
+
+          {mode === 'register' && (
+            <fieldset className="role-fieldset">
+              <legend>I want to</legend>
+              <div className="role-options">
+                <label className={`role-card${role === 'passenger' ? ' active' : ''}`}>
+                  <input type="radio" name="role" value="passenger" checked={role === 'passenger'} onChange={() => setRole('passenger')} />
+                  <strong>Ride as passenger</strong>
+                  <span>Find and book seats on available rides</span>
+                </label>
+                <label className={`role-card${role === 'driver' ? ' active' : ''}`}>
+                  <input type="radio" name="role" value="driver" checked={role === 'driver'} onChange={() => setRole('driver')} />
+                  <strong>Offer rides as driver</strong>
+                  <span>Post rides and accept passenger bookings</span>
+                </label>
+              </div>
+            </fieldset>
+          )}
+
+          {mode === 'register' && role === 'driver' && (
+            <>
+              <label>
+                Car type
+                <input type="text" value={carType} onChange={(e) => setCarType(e.target.value)} placeholder="e.g. Toyota Fielder" required />
+              </label>
+              <label>
+                Number plate
+                <input type="text" value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} placeholder="e.g. KCA 123A" required />
+              </label>
+              <label>
+                Driver's license number
+                <input type="text" value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder="e.g. DL123456" required />
+              </label>
+            </>
+          )}
+
+          {error && <div className="state-bar danger">{error}</div>}
+
+          <button type="submit" className="button" disabled={loading}>
+            {loading ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="security-note" style={{ justifyContent: 'center', margin: '10px 0' }}>or</p>
 
         <a href={`${apiBase}/auth/google`} className="google-button">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
@@ -35,7 +134,7 @@ export default function LoginPage() {
 
         <div className="security-note">
           <ShieldCheck size={18} />
-          Only USIU-Africa Google accounts are accepted.
+          Your data is protected and never shared.
         </div>
       </section>
     </main>

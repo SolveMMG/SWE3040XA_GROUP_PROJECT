@@ -2,15 +2,18 @@ const userModel      = require('../models/user.model');
 const authTokenModel = require('../models/authToken.model');
 
 const serializePrivate = (u) => ({
-  id:         u.id,
-  name:       u.name,
-  email:      u.email,
-  bio:        u.bio       || null,
-  role:       u.role,
-  photoUrl:   u.photo_url || null,
-  avgRating:  u.avg_rating  ?? 0,
-  rideCount:  u.ride_count  ?? 0,
-  createdAt:  u.created_at,
+  id:            u.id,
+  name:          u.name,
+  email:         u.email,
+  bio:           u.bio            || null,
+  role:          u.role,
+  photoUrl:      u.photo_url      || null,
+  carType:       u.car_type       || null,
+  licensePlate:  u.license_plate  || null,
+  licenseNumber: u.license_number || null,
+  avgRating:     u.avg_rating  ?? 0,
+  rideCount:     u.ride_count  ?? 0,
+  createdAt:     u.created_at,
 });
 
 const serializePublic = (u) => ({
@@ -35,8 +38,8 @@ const getMe = async(req, res, next) => {
 // PUT /users/me  (validation handled by rules.updateProfile in the route)
 const updateMe = async(req, res, next) => {
   try {
-    const { name, bio, role, photoUrl } = req.body;
-    const updated = await userModel.update(req.user.userId, { name, bio, role, photoUrl });
+    const { name, bio, role, photoUrl, carType, licensePlate, licenseNumber } = req.body;
+    const updated = await userModel.update(req.user.userId, { name, bio, role, photoUrl, carType, licensePlate, licenseNumber });
     if (!updated) return res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
     return res.json(serializePrivate(updated));
   } catch (err) { next(err); }
