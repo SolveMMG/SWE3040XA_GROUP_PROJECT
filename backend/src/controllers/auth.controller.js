@@ -6,7 +6,7 @@ const tokenService     = require('../services/token.service');
 // ---------- helpers ----------
 
 function buildUserResponse(user) {
-  const role = user.role; // already mapped to 'customer'/'driver' by the model
+  const role = user.role;
   return {
     id:         user.id,
     name:       user.name,
@@ -16,6 +16,9 @@ function buildUserResponse(user) {
     bio:        user.bio            || '',
     photoUrl:   user.photo_url      || '',
     rating:     user.avg_rating     || 0,
+    carType:       user.car_type       || null,
+    licensePlate:  user.license_plate  || null,
+    licenseNumber: user.license_number || null,
     customerProfile: role === 'customer' ? (user.profile_data || { homeArea: '', preferredPayment: 'Card' }) : null,
     driverProfile:   role === 'driver'   ? (user.profile_data || null) : null,
   };
@@ -36,6 +39,7 @@ const register = async(req, res, next) => {
       name, email, password, role,
       phone, homeArea, preferredPayment,
       vehicle, licensePlate, seats, driverLicense,
+      carType, licenseNumber,
     } = req.body;
 
     if (!name || !email || !password || !role) {
@@ -64,6 +68,9 @@ const register = async(req, res, next) => {
       role,
       phone:        phone ? phone.trim() : null,
       profileData,
+      carType:      carType       || vehicle || null,
+      licensePlate: licensePlate  || licensePlate || null,
+      licenseNumber: licenseNumber || driverLicense || null,
     });
 
     const { token, refreshToken } = await issueTokens(user.id, user.email);

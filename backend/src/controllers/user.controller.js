@@ -4,15 +4,18 @@ const authTokenModel = require('../models/authToken.model');
 const VALID_ROLES = ['passenger', 'driver'];
 
 const serializePrivate = (u) => ({
-  id:         u.id,
-  name:       u.name,
-  email:      u.email,
-  bio:        u.bio       || null,
-  role:       u.role,
-  photoUrl:   u.photo_url || null,
-  avgRating:  u.avg_rating  ?? 0,
-  rideCount:  u.ride_count  ?? 0,
-  createdAt:  u.created_at,
+  id:            u.id,
+  name:          u.name,
+  email:         u.email,
+  bio:           u.bio            || null,
+  role:          u.role,
+  photoUrl:      u.photo_url      || null,
+  carType:       u.car_type       || null,
+  licensePlate:  u.license_plate  || null,
+  licenseNumber: u.license_number || null,
+  avgRating:     u.avg_rating  ?? 0,
+  rideCount:     u.ride_count  ?? 0,
+  createdAt:     u.created_at,
 });
 
 const serializePublic = (u) => ({
@@ -37,7 +40,7 @@ const getMe = async(req, res, next) => {
 // PUT /users/me
 const updateMe = async(req, res, next) => {
   try {
-    const { name, bio, role, photoUrl } = req.body;
+    const { name, bio, role, photoUrl, carType, licensePlate, licenseNumber } = req.body;
 
     if (name     !== undefined && (typeof name !== 'string' || !name.trim())) {
       return res.status(400).json({ error: { code: 'INVALID_NAME', message: 'name must be a non-empty string' } });
@@ -52,7 +55,7 @@ const updateMe = async(req, res, next) => {
       return res.status(400).json({ error: { code: 'INVALID_PHOTO_URL', message: 'photoUrl must be a string' } });
     }
 
-    const updated = await userModel.update(req.user.userId, { name, bio, role, photoUrl });
+    const updated = await userModel.update(req.user.userId, { name, bio, role, photoUrl, carType, licensePlate, licenseNumber });
     if (!updated) return res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
     return res.json(serializePrivate(updated));
   } catch (err) { next(err); }
@@ -71,7 +74,7 @@ const getUserById = async(req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// DELETE /users/me  (A8 wires the route — implemented here for cohesion)
+// DELETE /users/me
 const deleteMe = async(req, res, next) => {
   try {
     await authTokenModel.revokeAll(req.user.userId);

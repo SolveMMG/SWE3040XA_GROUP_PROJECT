@@ -8,9 +8,7 @@ process.env.JWT_EXPIRES_IN = '1h';
 const tokenService = require('../src/services/token.service');
 
 describe('token service', () => {
-  // ─── hashToken ──────────────────────────────────────────────────────────────
-
-  it('hashes the same token consistently', () => {
+  it('hashes the same token consistently (SHA-256, 64 hex chars)', () => {
     const a = tokenService.hashToken('refresh-token');
     const b = tokenService.hashToken('refresh-token');
     assert.equal(a, b);
@@ -21,8 +19,6 @@ describe('token service', () => {
     assert.notEqual(tokenService.hashToken('abc'), tokenService.hashToken('xyz'));
   });
 
-  // ─── generateAccessToken / verifyAccessToken ────────────────────────────────
-
   it('generates a verifiable access token with the correct payload', () => {
     const token = tokenService.generateAccessToken(42, 'user@example.com');
     const payload = tokenService.verifyAccessToken(token);
@@ -31,18 +27,12 @@ describe('token service', () => {
   });
 
   it('throws JsonWebTokenError when verifying a tampered token', () => {
-    assert.throws(
-      () => tokenService.verifyAccessToken('not.a.real.token'),
-      { name: 'JsonWebTokenError' },
-    );
+    assert.throws(() => tokenService.verifyAccessToken('not.a.real.token'), { name: 'JsonWebTokenError' });
   });
 
-  it('throws JsonWebTokenError when verifying a token signed with a different secret', () => {
+  it('throws JsonWebTokenError when token is signed with a different secret', () => {
     const token = jwt.sign({ userId: 1, email: 'a@b.com' }, 'wrong-secret', { expiresIn: '1h' });
-    assert.throws(
-      () => tokenService.verifyAccessToken(token),
-      { name: 'JsonWebTokenError' },
-    );
+    assert.throws(() => tokenService.verifyAccessToken(token), { name: 'JsonWebTokenError' });
   });
 
   it('throws TokenExpiredError for an already-expired token', () => {
@@ -50,32 +40,23 @@ describe('token service', () => {
       { userId: 1, email: 'a@b.com', exp: Math.floor(Date.now() / 1000) - 3600 },
       'test-secret-key',
     );
-    assert.throws(
-      () => tokenService.verifyAccessToken(token),
-      { name: 'TokenExpiredError' },
-    );
+    assert.throws(() => tokenService.verifyAccessToken(token), { name: 'TokenExpiredError' });
   });
-
-  // ─── classifyJwtError ───────────────────────────────────────────────────────
 
   it('classifies TokenExpiredError correctly', () => {
     assert.deepEqual(tokenService.classifyJwtError({ name: 'TokenExpiredError' }), {
-      status: 401,
-      code: 'TOKEN_EXPIRED',
-      message: 'Access token has expired',
+      status: 401, code: 'TOKEN_EXPIRED', message: 'Access token has expired',
     });
   });
 
   it('classifies JsonWebTokenError correctly', () => {
     assert.deepEqual(tokenService.classifyJwtError({ name: 'JsonWebTokenError' }), {
-      status: 401,
-      code: 'INVALID_TOKEN',
-      message: 'Access token is invalid',
+      status: 401, code: 'INVALID_TOKEN', message: 'Access token is invalid',
     });
   });
 
   it('classifies any unknown JWT error as INVALID_TOKEN', () => {
-    const result = tokenService.classifyJwtError({ name: 'SomethingUnknown' });
+    const result = tokenService.classifyJwtError({ name: 'UnknownError' });
     assert.equal(result.status, 401);
     assert.equal(result.code, 'INVALID_TOKEN');
   });

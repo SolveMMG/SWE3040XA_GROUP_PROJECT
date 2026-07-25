@@ -5,7 +5,16 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:4000',
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
     },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test-setup.js'],
+    include: ['src/__tests__/**/*.{test,spec}.{js,jsx,ts,tsx}'],
   },
 });

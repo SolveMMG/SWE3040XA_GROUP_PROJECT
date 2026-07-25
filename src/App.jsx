@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AuthCallbackPage from './pages/AuthCallbackPage.jsx';
 import CreateListingPage from './pages/CreateListingPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import InquiriesPage from './pages/InquiriesPage.jsx';
@@ -13,6 +14,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route element={<Layout />}>
         <Route index element={<MarketplacePage />} />
         <Route
@@ -41,7 +43,7 @@ export default function App() {
           }
         />
         <Route
-          path="inquiries"
+          path="bookings"
           element={
             <ProtectedRoute>
               <InquiriesPage />
