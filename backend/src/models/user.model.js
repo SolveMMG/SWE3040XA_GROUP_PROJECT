@@ -11,7 +11,7 @@ const COMPUTED = `
 
 const findById = async(id) => {
   const { rows } = await db.query(
-    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.created_at, ${COMPUTED}
+    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.is_approved, u.created_at, ${COMPUTED}
      FROM users u
      LEFT JOIN reviews rv ON rv.driver_id = u.id
      WHERE u.id = $1
@@ -23,7 +23,7 @@ const findById = async(id) => {
 
 const findByEmail = async(email) => {
   const { rows } = await db.query(
-    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.created_at, ${COMPUTED}
+    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.is_approved, u.created_at, ${COMPUTED}
      FROM users u
      LEFT JOIN reviews rv ON rv.driver_id = u.id
      WHERE u.email = $1
@@ -33,14 +33,22 @@ const findByEmail = async(email) => {
   return rows[0] || null;
 };
 
-const create = async({ name, email, photoUrl }) => {
+const create = async({ name, email, photoUrl, passwordHash, isApproved = true }) => {
   const { rows } = await db.query(
-    `INSERT INTO users (name, email, photo_url)
-     VALUES ($1, $2, $3)
+    `INSERT INTO users (name, email, photo_url, password_hash, is_approved)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id, name, email, bio, role, photo_url, created_at`,
-    [name, email, photoUrl],
+    [name, email, photoUrl, passwordHash || null, isApproved],
   );
   return rows[0];
+};
+
+const findAuthByEmail = async(email) => {
+  const { rows } = await db.query(
+    'SELECT id, name, email, password_hash, role FROM users WHERE email = $1',
+    [email],
+  );
+  return rows[0] || null;
 };
 
 const update = async(id, { name, bio, role, photoUrl }) => {
@@ -67,4 +75,4 @@ const remove = async(id) => {
   await db.query('DELETE FROM users WHERE id = $1', [id]);
 };
 
-module.exports = { findById, findByEmail, create, update, remove };
+module.exports = { findById, findByEmail, findAuthByEmail, create, update, remove };

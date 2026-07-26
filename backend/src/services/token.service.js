@@ -1,8 +1,9 @@
+require('dotenv').config();
 const jwt    = require('jsonwebtoken');
 const crypto = require('crypto');
 const authTokenModel = require('../models/authToken.model');
 
-const accessSecret = () => process.env.JWT_SECRET;
+const accessSecret = () => process.env.JWT_SECRET || 'rideloop_default_fallback_jwt_secret_key_2026';
 const accessExpiry = () => process.env.JWT_EXPIRES_IN || '1h';
 
 const parseDurationMs = (str = '30d') => {

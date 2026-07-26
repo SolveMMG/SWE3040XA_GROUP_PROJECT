@@ -21,6 +21,29 @@ describe('API app', () => {
     assert.ok(routers.some((route) => route.includes('api') && route.includes('users')));
   });
 
+  it('mounts the ride workflow routers', () => {
+    const routers = app._router.stack
+      .filter((layer) => layer.name === 'router')
+      .map((layer) => String(layer.regexp));
+
+    assert.ok(routers.some((route) => route.includes('api') && route.includes('rides')));
+    assert.ok(routers.some((route) => route.includes('api') && route.includes('bookings')));
+    assert.ok(routers.some((route) => route.includes('api') && route.includes('payments')));
+    assert.ok(routers.some((route) => route.includes('api') && route.includes('reviews')));
+    assert.ok(routers.some((route) => route.includes('api') && route.includes('sites')));
+  });
+
+  it('registers /bookings/me before the dynamic booking id route', () => {
+    const bookingRouter = require('../src/routes/bookings');
+    const routes = bookingRouter.stack
+      .filter((layer) => layer.route)
+      .map((layer) => layer.route.path);
+
+    assert.ok(routes.indexOf('/me') > -1);
+    assert.ok(routes.indexOf('/:id') > -1);
+    assert.ok(routes.indexOf('/me') < routes.indexOf('/:id'));
+  });
+
   it('requires a bearer token for protected middleware', () => {
     let statusCode;
     let payload;

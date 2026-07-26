@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/me',    authenticate, userController.getMe);
 router.put('/me',    authenticate, userController.updateMe);
-router.delete('/me', authenticate, userController.deleteMe); // A8
+router.delete('/me', authenticate, userController.deleteMe);
 
 router.get('/:id', userController.getUserById);
 

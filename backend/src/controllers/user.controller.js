@@ -9,6 +9,7 @@ const serializePrivate = (u) => ({
   email:      u.email,
   bio:        u.bio       || null,
   role:       u.role,
+  isApproved: u.is_approved,
   photoUrl:   u.photo_url || null,
   avgRating:  u.avg_rating  ?? 0,
   rideCount:  u.ride_count  ?? 0,
