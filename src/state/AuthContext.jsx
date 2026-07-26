@@ -1,171 +1,41 @@
 import { createContext, useContext, useMemo, useState } from 'react';
+import { api, userFromApi } from '../services/api.js';
 
 const AuthContext = createContext(null);
-const legacyMockToken = 'mock-jwt-for-person-b-frontend';
-const usersKey = 'rideloop_users';
-
-function getStoredUsers() {
-  const stored = localStorage.getItem(usersKey);
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveStoredUsers(users) {
-  localStorage.setItem(usersKey, JSON.stringify(users));
-}
-
-function normalizeUser(user) {
-  return {
-    ...user,
-    role: user.role || 'customer',
-    phone: user.phone || '',
-    customerProfile: user.customerProfile || {
-      homeArea: '',
-      preferredPayment: 'Card',
-    },
-    driverProfile: user.driverProfile || null,
-  };
-}
-
-function createUser(credentials) {
-  const {
-    name,
-    email,
-    password,
-    phone,
-    role,
-    homeArea,
-    preferredPayment,
-    vehicle,
-    licensePlate,
-    seats,
-    driverLicense,
-  } = credentials;
-
-  return {
-    id: `user-${Date.now()}`,
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    password,
-    phone: phone.trim(),
-    role,
-    bio: '',
-    skills: [],
-    photoUrl: '',
-    rating: 0,
-    customerProfile:
-      role === 'customer'
-        ? {
-            homeArea: homeArea.trim(),
-            preferredPayment,
-          }
-        : null,
-    driverProfile:
-      role === 'driver'
-        ? {
-            vehicle: vehicle.trim(),
-            licensePlate: licensePlate.trim(),
-            seats: Number(seats),
-            driverLicense: driverLicense.trim(),
-          }
-        : null,
-  };
-}
-
-function startSession(user, setToken, setCurrentUser) {
-  const sessionUser = { ...normalizeUser(user), password: undefined };
-  const mockToken = `local-session-${user.id}`;
-  localStorage.setItem('rideloop_token', mockToken);
-  localStorage.setItem('rideloop_user', JSON.stringify(sessionUser));
-  setToken(mockToken);
-  setCurrentUser(sessionUser);
-  return sessionUser;
-}
+const tokenKey = 'rideloop_token';
+const userKey = 'rideloop_user';
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => {
-    const storedToken = localStorage.getItem('rideloop_token');
-    if (storedToken === legacyMockToken) {
-      localStorage.removeItem('rideloop_token');
-      localStorage.removeItem('rideloop_user');
-      return null;
-    }
-    return storedToken;
-  });
+  const [token, setToken] = useState(() => localStorage.getItem(tokenKey));
   const [currentUser, setCurrentUser] = useState(() => {
-    const stored = localStorage.getItem('rideloop_user');
-    if (!stored) return null;
-
-    return normalizeUser(JSON.parse(stored));
+    const stored = localStorage.getItem(userKey);
+    return stored ? JSON.parse(stored) : null;
   });
-
-  const signIn = ({ email, password }) => {
-    const user = getStoredUsers().find((account) => account.email === email.trim().toLowerCase());
-    if (!user || user.password !== password) {
-      return { ok: false, message: 'No account matches that email and password.' };
-    }
-
-    const sessionUser = startSession(normalizeUser(user), setToken, setCurrentUser);
-    return { ok: true, user: sessionUser };
+  const saveSession = ({ token: nextToken, user }) => {
+    const nextUser = userFromApi(user);
+    localStorage.setItem(tokenKey, nextToken);
+    localStorage.setItem(userKey, JSON.stringify(nextUser));
+    setToken(nextToken); setCurrentUser(nextUser);
+    return nextUser;
   };
-
-  const signUp = (credentials) => {
-    const users = getStoredUsers();
-    const email = credentials.email.trim().toLowerCase();
-
-    if (users.some((user) => user.email === email)) {
-      return { ok: false, message: 'An account already exists for this email.' };
-    }
-
-    const user = createUser(credentials);
-    saveStoredUsers([...users, user]);
-    const sessionUser = startSession(user, setToken, setCurrentUser);
-    return { ok: true, user: sessionUser };
+  const signIn = async ({ email, password }) => {
+    try { return { ok: true, user: saveSession(await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })) }; }
+    catch (err) { return { ok: false, message: err.message }; }
   };
-
-  const logout = () => {
-    localStorage.removeItem('rideloop_token');
-    localStorage.removeItem('rideloop_user');
-    setToken(null);
-    setCurrentUser(null);
+  const signUp = async ({ name, email, password, role }) => {
+    try {
+      const backendRole = role === 'driver' ? 'driver' : 'passenger';
+      return { ok: true, user: saveSession(await api('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role: backendRole }) })) };
+    } catch (err) { return { ok: false, message: err.message }; }
   };
-
-  const updateUser = (updates) => {
-    const nextUser = { ...currentUser, ...updates };
-    localStorage.setItem('rideloop_user', JSON.stringify(nextUser));
-    saveStoredUsers(
-      getStoredUsers().map((user) =>
-        user.id === currentUser.id
-          ? {
-              ...user,
-              ...updates,
-              password: user.password,
-            }
-          : user,
-      ),
-    );
-    setCurrentUser(nextUser);
+  const logout = async () => {
+    localStorage.removeItem(tokenKey); localStorage.removeItem(userKey); setToken(null); setCurrentUser(null);
   };
-
-  const value = useMemo(
-    () => ({
-      token,
-      currentUser,
-      isAuthenticated: Boolean(token && currentUser),
-      signIn,
-      signUp,
-      logout,
-      updateUser,
-    }),
-    [token, currentUser],
-  );
-
+  const updateUser = async (updates) => {
+    const user = userFromApi(await api('/users/me', { token, method: 'PUT', body: JSON.stringify(updates) }));
+    localStorage.setItem(userKey, JSON.stringify(user)); setCurrentUser(user); return user;
+  };
+  const value = useMemo(() => ({ token, currentUser, isAuthenticated: Boolean(token && currentUser), signIn, signUp, logout, updateUser }), [token, currentUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
-  }
-  return context;
-}
+export function useAuth() { const context = useContext(AuthContext); if (!context) throw new Error('useAuth must be used inside AuthProvider'); return context; }

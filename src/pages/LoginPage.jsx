@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const getPostAuthDestination = (role) => {
     if (role === 'driver') return '/dashboard';
-    if (role === 'customer') return '/profile';
+    if (role === 'customer' || role === 'passenger') return '/profile';
     return target;
   };
 
@@ -34,10 +34,10 @@ export default function LoginPage() {
     return <Navigate to={getPostAuthDestination(currentUser?.role)} replace />;
   }
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
-    const result = mode === 'signin' ? signIn(credentials) : signUp(credentials);
+    const result = mode === 'signin' ? await signIn(credentials) : await signUp(credentials);
     if (!result.ok) {
       setError(result.message);
       return;
@@ -215,7 +215,7 @@ export default function LoginPage() {
         </form>
         <div className="security-note">
           <ShieldCheck size={18} />
-          This creates a local frontend session until Person A connects real authentication.
+          Your account is securely created and authenticated through the RideLoop API.
         </div>
       </section>
     </main>

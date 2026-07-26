@@ -8,6 +8,8 @@ import ListingDetailPage from './pages/ListingDetailPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import MarketplacePage from './pages/MarketplacePage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import SitesPage from './pages/SitesPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 export default function App() {
   return (
@@ -15,6 +17,10 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Layout />}>
         <Route index element={<MarketplacePage />} />
+        <Route
+          path="admin"
+          element={<ProtectedRoute role="superadmin"><AdminPage /></ProtectedRoute>}
+        />
         <Route
           path="dashboard"
           element={
@@ -53,6 +59,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="sites"
+          element={
+            <ProtectedRoute>
+              <SitesPage />
             </ProtectedRoute>
           }
         />
