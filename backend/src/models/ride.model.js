@@ -139,7 +139,7 @@ const findAll = async({
   }
 
   // Only show active rides by default
-  conds.push(`r.status = 'active'`);
+  conds.push('r.status = \'active\'');
 
   const where = `WHERE ${conds.join(' AND ')}`;
 
