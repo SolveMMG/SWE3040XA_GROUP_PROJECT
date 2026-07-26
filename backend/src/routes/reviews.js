@@ -1,11 +1,15 @@
-const express           = require('express');
-const reviewController  = require('../controllers/review.controller');
-const { authenticate }  = require('../middleware/auth');
-const { rules }         = require('../middleware/validate');
+const express = require('express');
+
+const reviewsController = require('../controllers/reviews.controller');
+const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', authenticate, rules.createReview, reviewController.createReview);
-router.get('/',  reviewController.listReviews);
+// GET /reviews/driver/:driverId
+router.get('/driver/:driverId', authenticate, reviewsController.findByDriver);
+
+// POST /reviews
+router.post('/', authenticate, reviewsController.create);
 
 module.exports = router;
+
