@@ -163,51 +163,64 @@ export default function InquiriesPage() {
         </div>
       ) : (
         <div className="inquiry-list">
-          {items.map((item) => (
-            <article className="inquiry-card glass" key={item.id}>
-              <div>
-                <div className="card-topline">
-                  <span>Requested {new Date(item.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
-                  <span className={`status ${item.status}`}>{statusLabel(item.status)}</span>
-                </div>
-                <h2>
-                  {item.ride?.origin || 'Origin'} &rarr; {item.ride?.destination || 'Destination'}
-                </h2>
-                <p>
-                  {isDriverTab ? 'Passenger' : 'Driver'}: <strong>{isDriverTab ? item.passenger?.name : item.driver?.name}</strong> ·{' '}
-                  {item.seats_requested} seat(s) · Total Price: <strong>{formatKSh(item.total_price)}</strong>
-                </p>
-              </div>
+          {items.map((item) => {
+            const dateStr = item?.created_at || item?.createdAt;
+            const formattedDate = dateStr && !Number.isNaN(new Date(dateStr).getTime())
+              ? new Date(dateStr).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+              : 'Recently';
+            const origin = item.ride?.origin || item.origin || 'Origin';
+            const destination = item.ride?.destination || item.destination || 'Destination';
+            const passengerName = item.passenger?.name || item.passenger_name || 'Passenger';
+            const driverName = item.driver?.name || item.driver_name || 'Driver';
+            const seats = item.seats_requested || item.seatsRequested || item.seats || 1;
+            const price = item.total_price ?? item.totalPrice ?? 0;
 
-              {/* Action Buttons */}
-              {isDriverTab && item.status === 'pending' ? (
-                <div className="action-row">
-                  <button
-                    type="button"
-                    className="button success compact"
-                    onClick={() => update(item.id, 'accepted')}
-                  >
-                    <Check size={16} /> Accept Request
-                  </button>
-                  <button
-                    type="button"
-                    className="button danger compact"
-                    onClick={() => update(item.id, 'declined')}
-                  >
-                    <X size={16} /> Decline
-                  </button>
+            return (
+              <article className="inquiry-card glass" key={item.id}>
+                <div>
+                  <div className="card-topline">
+                    <span>Requested {formattedDate}</span>
+                    <span className={`status ${item.status}`}>{statusLabel(item.status)}</span>
+                  </div>
+                  <h2>
+                    {origin} &rarr; {destination}
+                  </h2>
+                  <p>
+                    {isDriverTab ? 'Passenger' : 'Driver'}: <strong>{isDriverTab ? passengerName : driverName}</strong> ·{' '}
+                    {seats} seat(s) · Total Price: <strong>{formatKSh(price)}</strong>
+                  </p>
                 </div>
-              ) : !isDriverTab && item.status === 'accepted' ? (
-                <button type="button" className="button" onClick={() => pay(item)}>
-                  <WalletCards size={18} /> Pay {formatKSh(item.total_price)} via M-Pesa
-                </button>
-              ) : (
-                <div className="status-note">
-                  <Clock size={16} /> {item.status}
-                </div>
-              )}
-            </article>
-          ))}
+
+                {/* Action Buttons */}
+                {isDriverTab && item.status === 'pending' ? (
+                  <div className="action-row">
+                    <button
+                      type="button"
+                      className="button success compact"
+                      onClick={() => update(item.id, 'accepted')}
+                    >
+                      <Check size={16} /> Accept Request
+                    </button>
+                    <button
+                      type="button"
+                      className="button danger compact"
+                      onClick={() => update(item.id, 'declined')}
+                    >
+                      <X size={16} /> Decline
+                    </button>
+                  </div>
+                ) : !isDriverTab && item.status === 'accepted' ? (
+                  <button type="button" className="button" onClick={() => pay(item)}>
+                    <WalletCards size={18} /> Pay {formatKSh(price)} via M-Pesa
+                  </button>
+                ) : (
+                  <div className="status-note">
+                    <Clock size={16} /> {item.status}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
 

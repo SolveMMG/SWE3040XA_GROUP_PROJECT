@@ -57,6 +57,14 @@ export default function App() {
           }
         />
         <Route
+          path="inquiries"
+          element={
+            <ProtectedRoute>
+              <InquiriesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="profile"
           element={
             <ProtectedRoute>
