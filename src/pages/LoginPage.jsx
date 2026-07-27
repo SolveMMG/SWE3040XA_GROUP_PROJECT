@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const getPostAuthDestination = (role) => {
     if (role === 'driver') return '/dashboard';
-    if (role === 'customer' || role === 'passenger') return '/profile';
+    if (role === 'passenger') return '/profile';
     return target;
   };
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
         <p>
           {mode === 'signin'
             ? 'Sign in with your email and password to continue.'
-            : 'Create a customer or driver profile with the required details for your role.'}
+            : 'Create a passenger or driver profile with the required details for your role.'}
         </p>
         <div className="segmented auth-switch">
           <button className={mode === 'signin' ? 'active' : ''} type="button" onClick={() => setMode('signin')}>
