@@ -209,6 +209,10 @@ export default function ListingDetailPage() {
             <Link to="/login" className="button">
               <MessageCircle size={18} /> Sign in to request ride
             </Link>
+          ) : currentUser?.role === 'driver' ? (
+            <button type="button" className="button" disabled>
+              <WalletCards size={18} /> Bookings not allowed for drivers
+            </button>
           ) : !isOwner ? (
             <button type="button" className="button" onClick={book} disabled={requestSent}>
               <WalletCards size={18} /> {requestSent ? 'Request Sent' : 'Request & Pay via M-Pesa'}
