@@ -49,14 +49,6 @@ export default function App() {
           }
         />
         <Route
-          path="bookings"
-          element={
-            <ProtectedRoute>
-              <InquiriesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="inquiries"
           element={
             <ProtectedRoute>
