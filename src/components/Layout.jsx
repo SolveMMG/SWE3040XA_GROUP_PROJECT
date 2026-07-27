@@ -14,11 +14,11 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header className="topbar glass">
-        <NavLink to={currentUser?.role === 'driver' ? '/dashboard' : '/'} className="brand" aria-label="RideLoop home">
+        <NavLink to="/" className="brand" aria-label="RideConnect home">
           <span className="brand-icon">
             <CarFront size={22} />
           </span>
-          <span>RideLoop</span>
+          <span>RideConnect</span>
         </NavLink>
         <nav className="nav-links" aria-label="Main navigation">
           {isAuthenticated && (

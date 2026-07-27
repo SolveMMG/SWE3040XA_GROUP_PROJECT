@@ -13,7 +13,7 @@ export default function LoginPage() {
     email: '',
     password: '',
     phone: '',
-    role: 'customer',
+    role: 'passenger',
     homeArea: '',
     preferredPayment: 'Card',
     vehicle: '',
@@ -59,7 +59,7 @@ export default function LoginPage() {
           <span className="brand-icon">
             <CarFront size={24} />
           </span>
-          <span>RideLoop</span>
+          <span>RideConnect</span>
         </div>
         <h1>Smart ride sharing, built around trust.</h1>
         <p>
