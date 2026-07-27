@@ -570,7 +570,7 @@ export default function MarketplacePage() {
                             <span className="fare-sub">total fare</span>
                           </div>
 
-                          {isAuthenticated ? (
+                          {isAuthenticated && currentUser?.role !== 'driver' ? (
                             <Link
                               to={`/rides/${ride.id}`}
                               state={{
@@ -584,6 +584,14 @@ export default function MarketplacePage() {
                             >
                               Select Driver
                             </Link>
+                          ) : isAuthenticated ? (
+                            <button
+                              type="button"
+                              className="button mini-button select-driver-btn"
+                              disabled
+                            >
+                              Bookings not allowed
+                            </button>
                           ) : (
                             <button
                               type="button"

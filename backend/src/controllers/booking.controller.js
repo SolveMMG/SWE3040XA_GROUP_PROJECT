@@ -26,6 +26,9 @@ const createBooking = async(req, res, next) => {
     if (driverId === passengerId) {
       return res.status(400).json({ error: { code: 'OWN_RIDE', message: 'You cannot book your own ride' } });
     }
+    if (req.user.role === 'driver') {
+      return res.status(403).json({ error: { code: 'DRIVER_CANNOT_BOOK', message: 'Drivers are not allowed to book rides' } });
+    }
     if (ride.status !== 'active') {
       return res.status(400).json({ error: { code: 'RIDE_UNAVAILABLE', message: 'This ride is no longer active' } });
     }
