@@ -22,34 +22,36 @@ export default function Layout() {
         </NavLink>
         <nav className="nav-links" aria-label="Main navigation">
           {isAuthenticated && (
-            <NavLink to="/dashboard">
-              <Gauge size={18} />
-              Dashboard
-            </NavLink>
+            <>
+              <NavLink to="/dashboard">
+                <Gauge size={18} />
+                Dashboard
+              </NavLink>
+              {currentUser?.role !== 'driver' && (
+                <NavLink to="/" end>
+                  <Search size={18} />
+                  Browse
+                </NavLink>
+              )}
+              {currentUser?.role === 'driver' && (
+                <NavLink to="/rides/new">
+                  <Plus size={18} />
+                  Offer ride
+                </NavLink>
+              )}
+              {currentUser?.role === 'superadmin' && (
+                <NavLink to="/admin"><ShieldCheck size={18} />Admin</NavLink>
+              )}
+              <NavLink to="/inquiries">
+                <ClipboardList size={18} />
+                {currentUser?.role === 'driver' ? 'Ride requests' : 'My inquiries'}
+              </NavLink>
+              <NavLink to="/profile">
+                <CircleUserRound size={18} />
+                Profile
+              </NavLink>
+            </>
           )}
-          {currentUser?.role !== 'driver' && (
-            <NavLink to="/" end>
-              <Search size={18} />
-              Browse
-            </NavLink>
-          )}
-          {currentUser?.role === 'driver' && (
-            <NavLink to="/rides/new">
-              <Plus size={18} />
-              Offer ride
-            </NavLink>
-          )}
-          {currentUser?.role === 'superadmin' && (
-            <NavLink to="/admin"><ShieldCheck size={18} />Admin</NavLink>
-          )}
-          <NavLink to="/inquiries">
-            <ClipboardList size={18} />
-            {currentUser?.role === 'driver' ? 'Ride requests' : 'My inquiries'}
-          </NavLink>
-          <NavLink to="/profile">
-            <CircleUserRound size={18} />
-            Profile
-          </NavLink>
         </nav>
         <div className="account-actions">
           {isAuthenticated ? (
