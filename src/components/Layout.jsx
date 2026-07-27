@@ -14,42 +14,44 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header className="topbar glass">
-        <NavLink to={currentUser?.role === 'driver' ? '/dashboard' : '/'} className="brand" aria-label="RideLoop home">
+        <NavLink to="/" className="brand" aria-label="RideConnect home">
           <span className="brand-icon">
             <CarFront size={22} />
           </span>
-          <span>RideLoop</span>
+          <span>RideConnect</span>
         </NavLink>
         <nav className="nav-links" aria-label="Main navigation">
           {isAuthenticated && (
-            <NavLink to="/dashboard">
-              <Gauge size={18} />
-              Dashboard
-            </NavLink>
+            <>
+              <NavLink to="/dashboard">
+                <Gauge size={18} />
+                Dashboard
+              </NavLink>
+              {currentUser?.role !== 'driver' && (
+                <NavLink to="/" end>
+                  <Search size={18} />
+                  Browse
+                </NavLink>
+              )}
+              {currentUser?.role === 'driver' && (
+                <NavLink to="/rides/new">
+                  <Plus size={18} />
+                  Offer ride
+                </NavLink>
+              )}
+              {currentUser?.role === 'superadmin' && (
+                <NavLink to="/admin"><ShieldCheck size={18} />Admin</NavLink>
+              )}
+              <NavLink to="/inquiries">
+                <ClipboardList size={18} />
+                {currentUser?.role === 'driver' ? 'Ride requests' : 'My inquiries'}
+              </NavLink>
+              <NavLink to="/profile">
+                <CircleUserRound size={18} />
+                Profile
+              </NavLink>
+            </>
           )}
-          {currentUser?.role !== 'driver' && (
-            <NavLink to="/" end>
-              <Search size={18} />
-              Browse
-            </NavLink>
-          )}
-          {currentUser?.role === 'driver' && (
-            <NavLink to="/rides/new">
-              <Plus size={18} />
-              Offer ride
-            </NavLink>
-          )}
-          {currentUser?.role === 'superadmin' && (
-            <NavLink to="/admin"><ShieldCheck size={18} />Admin</NavLink>
-          )}
-          <NavLink to="/inquiries">
-            <ClipboardList size={18} />
-            {currentUser?.role === 'driver' ? 'Ride requests' : 'My inquiries'}
-          </NavLink>
-          <NavLink to="/profile">
-            <CircleUserRound size={18} />
-            Profile
-          </NavLink>
         </nav>
         <div className="account-actions">
           {isAuthenticated ? (
@@ -81,7 +83,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        <span>RideLoop</span>
+        <span>© 2026 RideLoop</span>
         <span>Smart carpooling & ride-sharing in Nairobi</span>
       </footer>
     </div>

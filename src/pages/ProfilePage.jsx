@@ -12,9 +12,9 @@ export default function ProfilePage() {
     name: currentUser.name || '',
     bio: currentUser.bio || '',
     photoUrl: currentUser.photoUrl || '',
-    vehicleModel: currentUser.vehicleModel || (isDriver ? 'Toyota Fielder (Silver)' : ''),
-    licensePlate: currentUser.licensePlate || (isDriver ? 'KDA 392L' : ''),
-    mpesaPhone: currentUser.mpesaPhone || '0712345678',
+    vehicleModel: currentUser.vehicleModel || '',
+    licensePlate: currentUser.licensePlate || '',
+    mpesaPhone: currentUser.mpesaPhone || '',
   });
 
   const [reviews, setReviews] = useState([]);

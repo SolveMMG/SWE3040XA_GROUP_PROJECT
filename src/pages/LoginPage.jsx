@@ -13,7 +13,7 @@ export default function LoginPage() {
     email: '',
     password: '',
     phone: '',
-    role: 'customer',
+    role: 'passenger',
     homeArea: '',
     preferredPayment: 'Card',
     vehicle: '',
@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const getPostAuthDestination = (role) => {
     if (role === 'driver') return '/dashboard';
-    if (role === 'customer' || role === 'passenger') return '/profile';
+    if (role === 'passenger') return '/profile';
     return target;
   };
 
@@ -59,13 +59,13 @@ export default function LoginPage() {
           <span className="brand-icon">
             <CarFront size={24} />
           </span>
-          <span>RideLoop</span>
+          <span>RideConnect</span>
         </div>
         <h1>Smart ride sharing, built around trust.</h1>
         <p>
           {mode === 'signin'
             ? 'Sign in with your email and password to continue.'
-            : 'Create a customer or driver profile with the required details for your role.'}
+            : 'Create a passenger or driver profile with the required details for your role.'}
         </p>
         <div className="segmented auth-switch">
           <button className={mode === 'signin' ? 'active' : ''} type="button" onClick={() => setMode('signin')}>
@@ -123,15 +123,15 @@ export default function LoginPage() {
               <fieldset className="role-fieldset">
                 <legend>Account type</legend>
                 <div className="role-options">
-                  <label className={credentials.role === 'customer' ? 'role-card active' : 'role-card'}>
+                  <label className={credentials.role === 'passenger' ? 'role-card active' : 'role-card'}>
                     <input
                       type="radio"
                       name="role"
-                      value="customer"
-                      checked={credentials.role === 'customer'}
+                      value="passenger"
+                      checked={credentials.role === 'passenger'}
                       onChange={(event) => updateField('role', event.target.value)}
                     />
-                    <strong>Customer</strong>
+                    <strong>Passenger</strong>
                     <span>Find rides, send inquiries, and review completed trips.</span>
                   </label>
                   <label className={credentials.role === 'driver' ? 'role-card active' : 'role-card'}>
@@ -147,7 +147,7 @@ export default function LoginPage() {
                   </label>
                 </div>
               </fieldset>
-              {credentials.role === 'customer' ? (
+              {credentials.role === 'passenger' ? (
                 <div className="form-grid two">
                   <label>
                     Home area
