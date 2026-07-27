@@ -1,26 +1,21 @@
 const db = require('../config/db');
 
-// avg_rating and review_count are computed from the reviews table on every fetch
-const PUBLIC_FIELDS = `
-  u.id,
-  u.name,
-  u.email,
-  u.bio,
-  u.skills,
-  u.photo_url,
-  u.created_at,
-  COALESCE(ROUND(AVG(r.rating)::numeric, 1), 0)::float AS avg_rating,
-  COUNT(r.id)::int                                       AS review_count
-`;
-
-const BASE_JOIN = `
-  FROM users u
-  LEFT JOIN reviews r ON r.seller_id = u.id
+// avg_rating computed from reviews (driver ratings); ride_count from rides + bookings
+const COMPUTED = `
+  COALESCE(ROUND(AVG(rv.rating)::numeric, 1), 0)::float AS avg_rating,
+  (
+    (SELECT COUNT(*) FROM rides    WHERE driver_id    = u.id) +
+    (SELECT COUNT(*) FROM bookings WHERE passenger_id = u.id AND status IN ('accepted', 'paid'))
+  )::int AS ride_count
 `;
 
 const findById = async(id) => {
   const { rows } = await db.query(
-    `SELECT ${PUBLIC_FIELDS} ${BASE_JOIN} WHERE u.id = $1 GROUP BY u.id`,
+    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.is_approved, u.created_at, ${COMPUTED}
+     FROM users u
+     LEFT JOIN reviews rv ON rv.driver_id = u.id
+     WHERE u.id = $1
+     GROUP BY u.id`,
     [id],
   );
   return rows[0] || null;
@@ -28,32 +23,43 @@ const findById = async(id) => {
 
 const findByEmail = async(email) => {
   const { rows } = await db.query(
-    `SELECT ${PUBLIC_FIELDS} ${BASE_JOIN} WHERE u.email = $1 GROUP BY u.id`,
+    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.is_approved, u.created_at, ${COMPUTED}
+     FROM users u
+     LEFT JOIN reviews rv ON rv.driver_id = u.id
+     WHERE u.email = $1
+     GROUP BY u.id`,
     [email],
   );
   return rows[0] || null;
 };
 
-const create = async({ name, email, photoUrl }) => {
+const create = async({ name, email, photoUrl, passwordHash, isApproved = true }) => {
   const { rows } = await db.query(
-    `INSERT INTO users (name, email, photo_url)
-     VALUES ($1, $2, $3)
-     RETURNING id, name, email, bio, skills, photo_url, created_at`,
-    [name, email, photoUrl],
+    `INSERT INTO users (name, email, photo_url, password_hash, is_approved)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, name, email, bio, role, photo_url, created_at`,
+    [name, email, photoUrl, passwordHash || null, isApproved],
   );
   return rows[0];
 };
 
-const update = async(id, { name, bio, skills, photoUrl }) => {
-  // Build SET clause dynamically — only update provided fields
+const findAuthByEmail = async(email) => {
+  const { rows } = await db.query(
+    'SELECT id, name, email, password_hash, role FROM users WHERE email = $1',
+    [email],
+  );
+  return rows[0] || null;
+};
+
+const update = async(id, { name, bio, role, photoUrl }) => {
   const fields = [];
   const values = [];
   let idx = 1;
 
-  if (name      !== undefined) { fields.push(`name = $${idx++}`);      values.push(name); }
-  if (bio       !== undefined) { fields.push(`bio = $${idx++}`);       values.push(bio); }
-  if (skills    !== undefined) { fields.push(`skills = $${idx++}`);    values.push(skills); }
-  if (photoUrl  !== undefined) { fields.push(`photo_url = $${idx++}`); values.push(photoUrl); }
+  if (name     !== undefined) { fields.push(`name = $${idx++}`);           values.push(name); }
+  if (bio      !== undefined) { fields.push(`bio = $${idx++}`);            values.push(bio); }
+  if (role     !== undefined) { fields.push(`role = $${idx++}::user_role`); values.push(role); }
+  if (photoUrl !== undefined) { fields.push(`photo_url = $${idx++}`);      values.push(photoUrl); }
 
   if (fields.length === 0) return findById(id);
 
@@ -69,4 +75,4 @@ const remove = async(id) => {
   await db.query('DELETE FROM users WHERE id = $1', [id]);
 };
 
-module.exports = { findById, findByEmail, create, update, remove };
+module.exports = { findById, findByEmail, findAuthByEmail, create, update, remove };

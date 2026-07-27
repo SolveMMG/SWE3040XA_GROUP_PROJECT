@@ -1,49 +1,46 @@
-import { Camera, Save } from 'lucide-react';
-import { useState } from 'react';
+import { Camera, Car, CreditCard, CheckCircle2, Phone, Save, ShieldCheck, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import StarRating from '../components/StarRating.jsx';
-import { reviews } from '../data/mockData.js';
+import { api } from '../services/api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 
 export default function ProfilePage() {
-  const { currentUser, updateUser } = useAuth();
+  const { currentUser, token, updateUser } = useAuth();
   const isDriver = currentUser.role === 'driver';
+
   const [form, setForm] = useState({
-    name: currentUser.name,
-    bio: currentUser.bio,
-    skills: currentUser.skills.join(', '),
-    photoUrl: currentUser.photoUrl,
+    name: currentUser.name || '',
+    bio: currentUser.bio || '',
+    photoUrl: currentUser.photoUrl || '',
+    vehicleModel: currentUser.vehicleModel || (isDriver ? 'Toyota Fielder (Silver)' : ''),
+    licensePlate: currentUser.licensePlate || (isDriver ? 'KDA 392L' : ''),
+    mpesaPhone: currentUser.mpesaPhone || '0712345678',
   });
-  const [rating, setRating] = useState(5);
-  const [reviewText, setReviewText] = useState('');
-  const [localReviews, setLocalReviews] = useState(reviews);
-  const [saved, setSaved] = useState(false);
 
-  const updateField = (field, value) => {
-    setSaved(false);
-    setForm((current) => ({ ...current, [field]: value }));
-  };
+  const [reviews, setReviews] = useState([]);
+  const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const saveProfile = (event) => {
-    event.preventDefault();
-    updateUser({
-      ...form,
-      skills: form.skills
-        .split(',')
-        .map((skill) => skill.trim())
-        .filter(Boolean),
-    });
-    setSaved(true);
-  };
+  useEffect(() => {
+    if (isDriver && currentUser.id) {
+      api(`/reviews/driver/${currentUser.id}`, { token })
+        .then((data) => setReviews(data.reviews || []))
+        .catch((err) => setMessage(err.message));
+    }
+  }, [currentUser.id, isDriver, token]);
 
-  const addReview = (event) => {
-    event.preventDefault();
-    if (!reviewText.trim()) return;
-    setLocalReviews((current) => [
-      { id: crypto.randomUUID(), author: currentUser.name, rating, text: reviewText.trim() },
-      ...current,
-    ]);
-    setReviewText('');
-    setRating(5);
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage('');
+    try {
+      await updateUser(form);
+      setMessage('Profile and vehicle details saved successfully.');
+    } catch (err) {
+      setMessage(err.message || 'Failed to save profile.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -56,97 +53,152 @@ export default function ProfilePage() {
             <Camera size={34} />
           </div>
         )}
-        <div>
-          <span className="eyebrow">{isDriver ? 'Driver profile' : 'Customer profile'}</span>
-          <h1>{form.name}</h1>
-          <p>
-            {form.bio ||
-              (isDriver
-                ? 'Add a short bio so other riders know who they are sharing the trip with.'
-                : 'Add a short bio so others can learn more about you on the platform.')}
-          </p>
-          <StarRating value={Math.round(currentUser.rating || 0)} label="Profile rating" />
-          <div className="detail-list">
-            <span>{isDriver ? 'Driver account' : 'Customer account'}</span>
-            <span>{currentUser.phone}</span>
+        <div className="profile-hero-info">
+          <div className="badge-row">
+            <span className="eyebrow">{isDriver ? 'Nairobi Verified Driver' : 'Registered Passenger'}</span>
+            {isDriver && (
+              <span className="verified-driver-pill">
+                <CheckCircle2 size={13} /> NTSA Verified Driver
+              </span>
+            )}
           </div>
+          <h1>{form.name}</h1>
+          <p>{form.bio || 'Add a short bio so riders and drivers can get to know you.'}</p>
+
+          <div className="rating-summary-row">
+            <StarRating value={Math.round(currentUser.rating || 4.9)} label="Profile rating" />
+            <span className="rating-num">★ {currentUser.rating || '4.9'} / 5.0</span>
+          </div>
+
+          {isDriver && (
+            <div className="driver-specs-pills">
+              <span className="spec-pill"><Car size={14} /> {form.vehicleModel}</span>
+              <span className="spec-pill"><CreditCard size={14} /> Plate: {form.licensePlate}</span>
+              <span className="spec-pill"><Phone size={14} /> Payout: {form.mpesaPhone}</span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="profile-grid">
-        <form className="form-card glass" onSubmit={saveProfile}>
-          <h2>Edit profile</h2>
+        <form className="form-card glass" onSubmit={save}>
+          <h2>{isDriver ? 'Edit Driver & Vehicle Profile' : 'Edit Profile'}</h2>
+
           <label>
-            Display name
-            <input value={form.name} onChange={(event) => updateField('name', event.target.value)} />
+            Display Name
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
+            />
           </label>
+
           <label>
-            Bio
-            <textarea value={form.bio} onChange={(event) => updateField('bio', event.target.value)} rows="4" />
+            Short Bio
+            <textarea
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              rows="3"
+              placeholder="e.g. Experienced daily commuter driving Roysambu - KICC CBD route. Safe & punctual."
+            />
           </label>
+
           <label>
-            Skills and trust tags
-            <input value={form.skills} onChange={(event) => updateField('skills', event.target.value)} />
-          </label>
-          <label>
-            Profile photo URL
+            Profile Photo URL
             <span className="input-with-icon">
               <Camera size={18} />
-              <input value={form.photoUrl} onChange={(event) => updateField('photoUrl', event.target.value)} />
+              <input
+                type="text"
+                value={form.photoUrl}
+                onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
+                placeholder="https://..."
+              />
             </span>
           </label>
-          <button type="submit" className="button">
-            <Save size={18} />
-            Save profile
+
+          {isDriver && (
+            <>
+              <div className="section-divider-title">
+                <Car size={16} /> Vehicle & M-Pesa Details
+              </div>
+
+              <div className="form-grid two">
+                <label>
+                  Vehicle Model & Color
+                  <input
+                    type="text"
+                    value={form.vehicleModel}
+                    onChange={(e) => setForm({ ...form, vehicleModel: e.target.value })}
+                    placeholder="e.g. Toyota Fielder (Silver)"
+                  />
+                </label>
+
+                <label>
+                  License Plate Number
+                  <input
+                    type="text"
+                    value={form.licensePlate}
+                    onChange={(e) => setForm({ ...form, licensePlate: e.target.value })}
+                    placeholder="e.g. KDA 392L"
+                  />
+                </label>
+              </div>
+
+              <label>
+                M-Pesa Payout Phone Number
+                <span className="input-with-icon">
+                  <Phone size={18} />
+                  <input
+                    type="tel"
+                    value={form.mpesaPhone}
+                    onChange={(e) => setForm({ ...form, mpesaPhone: e.target.value })}
+                    placeholder="e.g. 0712345678"
+                  />
+                </span>
+              </label>
+            </>
+          )}
+
+          <button type="submit" className="button" disabled={saving}>
+            <Save size={18} /> {saving ? 'Saving...' : 'Save Profile & Vehicle Info'}
           </button>
-          {saved && <div className="state-bar success">Profile updated locally.</div>}
+
+          {message && <div className="state-bar success">{message}</div>}
         </form>
 
         <div className="reviews-column">
-          <div className="role-summary glass">
-            <h2>{isDriver ? 'Driver details' : 'Customer preferences'}</h2>
-            {isDriver ? (
-              <>
-                <p>Vehicle: {currentUser.driverProfile?.vehicle}</p>
-                <p>Plate: {currentUser.driverProfile?.licensePlate}</p>
-                <p>Seats: {currentUser.driverProfile?.seats}</p>
-              </>
-            ) : (
-              <>
-                <p>Home area: {currentUser.customerProfile?.homeArea}</p>
-                <p>Payment preference: {currentUser.customerProfile?.preferredPayment}</p>
-              </>
-            )}
-          </div>
-          {isDriver ? (
-            <div className="review-list">
-              {localReviews.map((review) => (
-                <article className="review-card glass" key={review.id}>
-                  <div className="card-topline">
-                    <strong>{review.author}</strong>
-                    <StarRating value={review.rating} label={`${review.author} rating`} />
-                  </div>
-                  <p>{review.text}</p>
-                </article>
-              ))}
+          {isDriver && (
+            <div className="review-list glass">
+              <div className="card-title-row">
+                <Star size={20} className="header-icon" />
+                <div>
+                  <h3>Passenger Reviews</h3>
+                  <span>Feedback from past rides</span>
+                </div>
+              </div>
+
+              {reviews.length === 0 ? (
+                <div className="empty-state">
+                  <h2>No reviews yet</h2>
+                  <p>Reviews will appear here as passengers complete trips with you.</p>
+                </div>
+              ) : (
+                reviews.map((review) => (
+                  <article className="review-card glass" key={review.id}>
+                    <div className="card-topline">
+                      <strong>{review.reviewer?.name || 'Passenger'}</strong>
+                      <StarRating value={review.rating} label="Review rating" />
+                    </div>
+                    <p>{review.comment}</p>
+                  </article>
+                ))
+              )}
             </div>
-          ) : (
-            <form className="review-form glass" onSubmit={addReview}>
-              <h2>Leave a review</h2>
-              <StarRating value={rating} onChange={setRating} label="New review rating" />
-              <textarea
-                value={reviewText}
-                onChange={(event) => setReviewText(event.target.value)}
-                placeholder="Share what made the ride work well..."
-                rows="4"
-              />
-              <button type="submit" className="button">
-                Submit review
-              </button>
-            </form>
           )}
         </div>
       </div>
     </section>
   );
 }
+

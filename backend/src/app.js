@@ -4,30 +4,37 @@ const cors = require('cors');
 const morgan = require('morgan');
 const { init: initPassport } = require('./config/passport');
 
-// Initialise passport Google strategy (requires env vars to be loaded first)
 initPassport();
 
 const app = express();
 
 // Security & utility middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(cors({
+  origin: [process.env.FRONTEND_URL, 'http://localhost:8080', 'http://localhost:5173'].filter(Boolean),
+  credentials: true,
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // API routes
-app.use('/api/v1/auth',      require('./routes/auth'));
-// app.use('/api/v1/users',    require('./routes/users'));    // A7
-// app.use('/api/v1/listings', require('./routes/listings')); // Person C
-// app.use('/api/v1/uploads',  require('./routes/uploads'));  // Person C
-// app.use('/api/v1/inquiries',require('./routes/inquiries'));// Person C
-// app.use('/api/v1/reviews',  require('./routes/reviews'));  // Person C
+app.use('/api/v1/auth',     require('./routes/auth'));
+app.use('/api/v1/users',    require('./routes/users'));
+app.use('/api/v1/rides',    require('./routes/rides'));
+app.use('/api/v1/bookings', require('./routes/bookings'));
+app.use('/api/v1/payments', require('./routes/payments'));
+app.use('/api/v1/reviews',  require('./routes/reviews'));
+app.use('/api/v1/sites',    require('./routes/sites'));
+app.use('/api/v1/admin',    require('./routes/admin'));
+
+// Compatibility endpoint for externally configured Daraja/ngrok callbacks.
+app.post('/api/mpesa/callback', require('./controllers/payments.controller').mpesaCallback);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// 404 handler
+// 404
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
 });

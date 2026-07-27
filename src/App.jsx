@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AuthCallbackPage from './pages/AuthCallbackPage.jsx';
 import CreateListingPage from './pages/CreateListingPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import InquiriesPage from './pages/InquiriesPage.jsx';
@@ -8,13 +9,20 @@ import ListingDetailPage from './pages/ListingDetailPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import MarketplacePage from './pages/MarketplacePage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import SitesPage from './pages/SitesPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route element={<Layout />}>
         <Route index element={<MarketplacePage />} />
+        <Route
+          path="admin"
+          element={<ProtectedRoute role="superadmin"><AdminPage /></ProtectedRoute>}
+        />
         <Route
           path="dashboard"
           element={
@@ -41,6 +49,14 @@ export default function App() {
           }
         />
         <Route
+          path="bookings"
+          element={
+            <ProtectedRoute>
+              <InquiriesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="inquiries"
           element={
             <ProtectedRoute>
@@ -53,6 +69,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="sites"
+          element={
+            <ProtectedRoute>
+              <SitesPage />
             </ProtectedRoute>
           }
         />

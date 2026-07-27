@@ -1,4 +1,8 @@
 node_modules/
+dist/
 .env
 *.log
 .DS_Store
+
+# Bogus malformed paths from tooling
+<parameter*

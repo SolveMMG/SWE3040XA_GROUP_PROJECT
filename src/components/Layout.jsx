@@ -1,4 +1,4 @@
-import { CarFront, CircleUserRound, ClipboardList, Gauge, LogOut, Plus, Search } from 'lucide-react';
+import { CarFront, CircleUserRound, ClipboardList, Gauge, LogOut, Plus, Search, ShieldCheck } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../state/AuthContext.jsx';
 
@@ -14,7 +14,7 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header className="topbar glass">
-        <NavLink to="/" className="brand" aria-label="RideLoop home">
+        <NavLink to={currentUser?.role === 'driver' ? '/dashboard' : '/'} className="brand" aria-label="RideLoop home">
           <span className="brand-icon">
             <CarFront size={22} />
           </span>
@@ -27,15 +27,20 @@ export default function Layout() {
               Dashboard
             </NavLink>
           )}
-          <NavLink to="/" end>
-            <Search size={18} />
-            Browse
-          </NavLink>
+          {currentUser?.role !== 'driver' && (
+            <NavLink to="/" end>
+              <Search size={18} />
+              Browse
+            </NavLink>
+          )}
           {currentUser?.role === 'driver' && (
             <NavLink to="/rides/new">
               <Plus size={18} />
               Offer ride
             </NavLink>
+          )}
+          {currentUser?.role === 'superadmin' && (
+            <NavLink to="/admin"><ShieldCheck size={18} />Admin</NavLink>
           )}
           <NavLink to="/inquiries">
             <ClipboardList size={18} />
@@ -49,10 +54,15 @@ export default function Layout() {
         <div className="account-actions">
           {isAuthenticated ? (
             <>
-              {currentUser.photoUrl ? (
+              {currentUser?.role === 'driver' && (
+                <span className="driver-online-badge">
+                  <span className="pulse-dot green" /> Driver Online
+                </span>
+              )}
+              {currentUser?.photoUrl ? (
                 <img src={currentUser.photoUrl} alt="" className="avatar" />
               ) : (
-                <span className="avatar initials" aria-label={currentUser.name}>
+                <span className="avatar initials" aria-label={currentUser?.name || 'User'}>
                   {initials}
                 </span>
               )}
@@ -71,8 +81,8 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        <span>RideLoop frontend mock</span>
-        <span>Built for Person B tasks with backend-ready UI flows.</span>
+        <span>RideLoop</span>
+        <span>Smart carpooling & ride-sharing in Nairobi</span>
       </footer>
     </div>
   );
