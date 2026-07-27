@@ -70,6 +70,7 @@ export default function ListingDetailPage() {
   const mapsUrl = buildMapsUrl(effectivePickup, effectiveDropoff);
 
 
+  const book = async () => {
     try {
       const created = await api('/bookings', {
         token,
