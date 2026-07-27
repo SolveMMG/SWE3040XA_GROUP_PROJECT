@@ -18,19 +18,23 @@ export default function ListingDetailPage() {
   const pickupDistanceKm = state?.pickupDistanceKm;
   const tripDistanceKm = state?.tripDistanceKm;
 
-  const [ride, setRide] = useState(() => ({
-    id: String(rideId || '1'),
-    pickup: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)',
-    dropoff: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)',
-    price: calculatedFare || 50,
-    seats: 3,
-    dateTime: new Date(),
-    pickupLocation: { address: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)', placeId: '', lat: customPickup?.lat || -1.2180, lng: customPickup?.lng || 36.8870 },
-    dropoffLocation: { address: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)', placeId: '', lat: customDropoff?.lat || -1.2885, lng: customDropoff?.lng || 36.8232 },
-    seller: { id: 1, name: 'Samuel Njuguna (Kenyan Driver)', rating: '4.9', rideCount: 15 },
-  }));
+   const [ride, setRide] = useState(() => ({
+     id: String(rideId || '1'),
+     pickup: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)',
+     dropoff: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)',
+     price: calculatedFare || 50,
+     seats: 3,
+     dateTime: new Date(),
+     pickupLocation: { address: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)', placeId: '', lat: customPickup?.lat || -1.2180, lng: customPickup?.lng || 36.8870 },
+     dropoffLocation: { address: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)', placeId: '', lat: customDropoff?.lat || -1.2885, lng: customDropoff?.lng || 36.8232 },
+     seller: { id: 1, name: 'Samuel Njuguna (Kenyan Driver)', rating: '4.9', rideCount: 15 },
+   }));
 
-  useEffect(() => {
+   const [message, setMessage] = useState('');
+   const [requestSent, setRequestSent] = useState(false);
+   const [dispatchInfo, setDispatchInfo] = useState(null);
+
+   useEffect(() => {
     if (!rideId) return;
     api(`/rides/${rideId}`)
       .then((data) => {
@@ -65,11 +69,7 @@ export default function ListingDetailPage() {
   const dist = distanceInMiles(effectivePickupCoords, effectiveDropoffCoords);
   const mapsUrl = buildMapsUrl(effectivePickup, effectiveDropoff);
 
-  const [message, setMessage] = useState('');
-  const [requestSent, setRequestSent] = useState(false);
-  const [dispatchInfo, setDispatchInfo] = useState(null);
 
-  const book = async () => {
     try {
       const created = await api('/bookings', {
         token,
