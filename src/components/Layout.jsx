@@ -83,7 +83,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        <span>RideLoop</span>
+        <span>© 2026 RideLoop</span>
         <span>Smart carpooling & ride-sharing in Nairobi</span>
       </footer>
     </div>
