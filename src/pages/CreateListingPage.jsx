@@ -60,6 +60,7 @@ export default function CreateListingPage({ mode = 'create' }) {
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (mode === 'edit' && rideId) {
@@ -168,6 +169,24 @@ export default function CreateListingPage({ mode = 'create' }) {
       setMessage(err.message || 'Failed to publish ride offer.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm('Are you sure you want to delete this ride listing? This action cannot be undone.');
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setMessage('');
+    setSuccess('');
+    try {
+      await api(`/rides/${rideId}`, { token, method: 'DELETE' });
+      setSuccess('Ride listing deleted successfully.');
+      setTimeout(() => navigate('/dashboard'), 1200);
+    } catch (err) {
+      setMessage(err.message || 'Failed to delete ride listing.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -308,6 +327,11 @@ export default function CreateListingPage({ mode = 'create' }) {
           <button type="submit" className="button big" disabled={submitting}>
             <Save size={18} /> {submitting ? 'Publishing...' : mode === 'edit' ? 'Save Ride Changes' : 'Publish Live Ride Offer'}
           </button>
+          {mode === 'edit' && (
+            <button type="button" className="button danger" onClick={handleDelete} disabled={deleting}>
+              <Trash2 size={18} /> {deleting ? 'Deleting...' : 'Delete Ride Listing'}
+            </button>
+          )}
         </div>
       </form>
     </section>

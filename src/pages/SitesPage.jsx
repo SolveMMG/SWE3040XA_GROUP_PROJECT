@@ -134,7 +134,7 @@ export default function SitesPage() {
           {sites.length === 0 ? (
             <div className="empty-state">
               <MapPinned size={28} />
-              <h2>No saved sites yet</h2>
+              <h2>No pickup sites available yet.</h2>
               <p>Add your frequent pickup or dropoff spots for easy 1-click selection.</p>
             </div>
           ) : (

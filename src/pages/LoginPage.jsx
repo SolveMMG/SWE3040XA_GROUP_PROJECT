@@ -22,6 +22,7 @@ export default function LoginPage() {
     driverLicense: '',
   });
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const target = location.state?.from?.pathname || '/';
 
   const getPostAuthDestination = (role) => {
@@ -37,14 +38,19 @@ export default function LoginPage() {
   const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
-    const result = mode === 'signin' ? await signIn(credentials) : await signUp(credentials);
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
+    setSubmitting(true);
+    try {
+      const result = mode === 'signin' ? await signIn(credentials) : await signUp(credentials);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
 
-    const role = result.user?.role || credentials.role;
-    navigate(getPostAuthDestination(role), { replace: true });
+      const role = result.user?.role || credentials.role;
+      navigate(getPostAuthDestination(role), { replace: true });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const updateField = (field, value) => {
@@ -209,8 +215,8 @@ export default function LoginPage() {
             </>
           )}
           {error && <div className="state-bar danger">{error}</div>}
-          <button type="submit" className="google-button">
-            {mode === 'signin' ? 'Sign in' : 'Create account'}
+          <button type="submit" className="google-button" disabled={submitting}>
+            {submitting ? 'Submitting...' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
         </form>
         <div className="security-note">

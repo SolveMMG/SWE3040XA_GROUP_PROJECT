@@ -65,6 +65,9 @@ const create = async(req, res, next) => {
     if (driverId === req.user.userId) {
       return res.status(409).json({ error: { code: 'CANNOT_BOOK_OWN_RIDE', message: 'Drivers cannot book their own rides' } });
     }
+    if (req.user.role === 'driver') {
+      return res.status(403).json({ error: { code: 'DRIVER_CANNOT_BOOK', message: 'Drivers are not allowed to book rides' } });
+    }
     if (seatsN > ride.seats_available) {
       return res.status(409).json({ error: { code: 'NOT_ENOUGH_SEATS', message: 'Not enough seats available' } });
     }
