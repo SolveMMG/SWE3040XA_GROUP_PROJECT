@@ -23,10 +23,13 @@ export async function api(path, { token, ...options } = {}) {
 
 export const userFromApi = (user = {}) => ({
   ...user,
-  id: user?.id || 1,
-  name: user?.name || 'Kenyan Driver',
-  photoUrl: user?.photoUrl ?? user?.photo_url ?? '',
-  rating: user?.avgRating ?? user?.avg_rating ?? '4.9',
+  id:           user?.id || 1,
+  name:         user?.name || 'Kenyan Driver',
+  photoUrl:     user?.photoUrl     ?? user?.photo_url     ?? '',
+  rating:       user?.avgRating    ?? user?.avg_rating    ?? '4.9',
+  vehicleModel: user?.vehicleModel ?? user?.vehicle_model ?? '',
+  licensePlate: user?.licensePlate ?? user?.license_plate ?? '',
+  mpesaPhone:   user?.mpesaPhone   ?? user?.mpesa_phone   ?? '',
 });
 
 export const rideFromApi = (ride = {}) => {

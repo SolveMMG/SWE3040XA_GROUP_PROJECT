@@ -1,5 +1,7 @@
 const bookingModel = require('../models/booking.model');
-const rideModel = require('../models/ride.model');
+const rideModel    = require('../models/ride.model');
+const userModel    = require('../models/user.model');
+const { sendPush } = require('../services/firebase.service');
 
 const parseIntOrNull = (v) => {
   const n = parseInt(v, 10);
@@ -82,6 +84,10 @@ const create = async(req, res, next) => {
       totalPrice,
     });
 
+    userModel.getFcmToken(driverId)
+      .then((fcmToken) => sendPush(fcmToken, 'New Booking Request', `Someone wants to book ${seatsN} seat(s) on your ride`))
+      .catch(() => {});
+
     return res.status(201).json(created);
   } catch (err) { next(err); }
 };
@@ -106,8 +112,38 @@ const updateStatus = async(req, res, next) => {
     }
 
     const updated = await bookingModel.updateStatus(id, status);
+
+    const passengerId = booking.passenger?.id;
+    if (passengerId) {
+      const msg = status === 'accepted'
+        ? 'Your booking was accepted! Proceed to payment.'
+        : 'Your booking was declined by the driver.';
+      userModel.getFcmToken(passengerId)
+        .then((fcmToken) => sendPush(fcmToken, `Booking ${status === 'accepted' ? 'Accepted' : 'Declined'}`, msg))
+        .catch(() => {});
+    }
+
     return res.json(updated);
   } catch (err) { next(err); }
 };
 
-module.exports = { findById, findByUser, create, updateStatus };
+const cancel = async(req, res, next) => {
+  try {
+    const id = parseIntOrNull(req.params.id);
+    if (!id) return res.status(400).json({ error: { code: 'INVALID_ID', message: 'Booking id must be an integer' } });
+
+    const booking = await bookingModel.findById(id);
+    if (!booking) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Booking not found' } });
+    if (booking.passenger?.id !== req.user.userId) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the passenger can cancel this booking' } });
+    }
+    if (!['pending', 'accepted'].includes(booking.status)) {
+      return res.status(409).json({ error: { code: 'CANNOT_CANCEL', message: 'Only pending or accepted bookings can be cancelled' } });
+    }
+
+    const updated = await bookingModel.updateStatus(id, 'declined');
+    return res.json(updated);
+  } catch (err) { next(err); }
+};
+
+module.exports = { findById, findByUser, create, updateStatus, cancel };

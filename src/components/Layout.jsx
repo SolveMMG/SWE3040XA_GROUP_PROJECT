@@ -1,5 +1,6 @@
-import { CarFront, CircleUserRound, ClipboardList, Gauge, LogOut, Plus, Search, ShieldCheck } from 'lucide-react';
+import { CarFront, CircleUserRound, ClipboardList, Gauge, LogOut, MapPin, Plus, Search, ShieldCheck } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
+import NotificationsPanel from './NotificationsPanel.jsx';
 import { useAuth } from '../state/AuthContext.jsx';
 
 export default function Layout() {
@@ -46,6 +47,10 @@ export default function Layout() {
                 <ClipboardList size={18} />
                 {currentUser?.role === 'driver' ? 'Ride requests' : 'My inquiries'}
               </NavLink>
+              <NavLink to="/sites">
+                <MapPin size={18} />
+                My sites
+              </NavLink>
               <NavLink to="/profile">
                 <CircleUserRound size={18} />
                 Profile
@@ -68,6 +73,7 @@ export default function Layout() {
                   {initials}
                 </span>
               )}
+              <NotificationsPanel />
               <button className="icon-button" type="button" onClick={logout} aria-label="Log out">
                 <LogOut size={18} />
               </button>
@@ -83,7 +89,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
-        <span>© 2026 RideLoop</span>
+        <span>© 2026 RideConnect</span>
         <span>Smart carpooling & ride-sharing in Nairobi</span>
       </footer>
     </div>

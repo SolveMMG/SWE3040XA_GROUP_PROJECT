@@ -11,7 +11,8 @@ const COMPUTED = `
 
 const findById = async(id) => {
   const { rows } = await db.query(
-    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.is_approved, u.created_at, ${COMPUTED}
+    `SELECT u.id, u.name, u.email, u.bio, u.role, u.photo_url, u.is_approved, u.created_at,
+            u.car_type, u.vehicle_model, u.license_plate, u.license_number, u.mpesa_phone, ${COMPUTED}
      FROM users u
      LEFT JOIN reviews rv ON rv.driver_id = u.id
      WHERE u.id = $1
@@ -51,15 +52,18 @@ const findAuthByEmail = async(email) => {
   return rows[0] || null;
 };
 
-const update = async(id, { name, bio, role, photoUrl }) => {
+const update = async(id, { name, bio, role, photoUrl, vehicleModel, licensePlate, mpesaPhone }) => {
   const fields = [];
   const values = [];
   let idx = 1;
 
-  if (name     !== undefined) { fields.push(`name = $${idx++}`);           values.push(name); }
-  if (bio      !== undefined) { fields.push(`bio = $${idx++}`);            values.push(bio); }
-  if (role     !== undefined) { fields.push(`role = $${idx++}::user_role`); values.push(role); }
-  if (photoUrl !== undefined) { fields.push(`photo_url = $${idx++}`);      values.push(photoUrl); }
+  if (name         !== undefined) { fields.push(`name = $${idx++}`);            values.push(name); }
+  if (bio          !== undefined) { fields.push(`bio = $${idx++}`);             values.push(bio); }
+  if (role         !== undefined) { fields.push(`role = $${idx++}::user_role`); values.push(role); }
+  if (photoUrl     !== undefined) { fields.push(`photo_url = $${idx++}`);       values.push(photoUrl); }
+  if (vehicleModel !== undefined) { fields.push(`vehicle_model = $${idx++}`);   values.push(vehicleModel); }
+  if (licensePlate !== undefined) { fields.push(`license_plate = $${idx++}`);   values.push(licensePlate); }
+  if (mpesaPhone   !== undefined) { fields.push(`mpesa_phone = $${idx++}`);     values.push(mpesaPhone); }
 
   if (fields.length === 0) return findById(id);
 
@@ -75,4 +79,13 @@ const remove = async(id) => {
   await db.query('DELETE FROM users WHERE id = $1', [id]);
 };
 
-module.exports = { findById, findByEmail, findAuthByEmail, create, update, remove };
+const saveFcmToken = async(id, token) => {
+  await db.query('UPDATE users SET fcm_token = $1 WHERE id = $2', [token, id]);
+};
+
+const getFcmToken = async(id) => {
+  const { rows } = await db.query('SELECT fcm_token FROM users WHERE id = $1', [id]);
+  return rows[0]?.fcm_token || null;
+};
+
+module.exports = { findById, findByEmail, findAuthByEmail, create, update, remove, saveFcmToken, getFcmToken };

@@ -57,10 +57,11 @@ export default function CreateListingPage({ mode = 'create' }) {
     notes: '',
   });
 
-  const [message, setMessage] = useState('');
-  const [success, setSuccess] = useState('');
+  const [message, setMessage]       = useState('');
+  const [success, setSuccess]       = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
+  const [priceEdited, setPriceEdited] = useState(false);
 
   useEffect(() => {
     if (mode === 'edit' && rideId) {
@@ -87,8 +88,8 @@ export default function CreateListingPage({ mode = 'create' }) {
         [field === 'pickupLocation' ? 'pickup' : 'dropoff']: location?.name || location?.address || '',
       };
 
-      // Auto-calculate suggested price if both locations have coordinates
-      if (updated.pickupLocation?.lat && updated.dropoffLocation?.lat) {
+      // Auto-suggest price only if the user hasn't manually set one
+      if (!priceEdited && updated.pickupLocation?.lat && updated.dropoffLocation?.lat) {
         const km = calculateHaversineKm(
           updated.pickupLocation.lat,
           updated.pickupLocation.lng,
@@ -103,6 +104,7 @@ export default function CreateListingPage({ mode = 'create' }) {
   }, []);
 
   const applyPreset = (preset) => {
+    setPriceEdited(false);
     setForm((current) => ({
       ...current,
       pickup: preset.pickup.address,
@@ -287,7 +289,7 @@ export default function CreateListingPage({ mode = 'create' }) {
                 min="50"
                 step="50"
                 value={form.price}
-                onChange={(e) => setField('price', e.target.value)}
+                onChange={(e) => { setPriceEdited(true); setField('price', e.target.value); }}
                 required
               />
             </span>

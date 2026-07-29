@@ -1,5 +1,5 @@
 # ── Stage 1: build ───────────────────────────────────────────────────────────
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,6 +7,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY index.html vite.config.js ./
+COPY public/ ./public/
 COPY src/ ./src/
 
 RUN npm run build

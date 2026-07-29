@@ -1,6 +1,8 @@
 const paymentModel = require('../models/payment.model');
 const bookingModel = require('../models/booking.model');
+const userModel    = require('../models/user.model');
 const mpesaService = require('../services/mpesa.service');
+const { sendPush } = require('../services/firebase.service');
 
 const parseIntOrNull = (v) => {
   const n = parseInt(v, 10);
@@ -104,21 +106,36 @@ const initiateStkPush = async(req, res, next) => {
       });
     }
 
-    // Auto-complete payment in sandbox mode for instant confirmation & driver dispatch
-    const mpesaRef = `QJK${Math.floor(100000 + Math.random() * 900000)}`;
-    const paidPayment = await paymentModel.markPaid({ checkoutRequestId: stk.checkoutRequestId, mpesaRef });
-    if (paidPayment?.booking_id) {
-      await bookingModel.markPaid(paidPayment.booking_id);
+    // In sandbox Safaricom cannot reach localhost, so auto-confirm after 5s to simulate the real callback
+    if (process.env.MPESA_ENV !== 'production') {
+      setTimeout(async () => {
+        try {
+          const mpesaRef = `QJK${Math.floor(100000 + Math.random() * 900000)}`;
+          const paidPayment = await paymentModel.markPaid({ checkoutRequestId: stk.checkoutRequestId, mpesaRef });
+          if (paidPayment?.booking_id) {
+            await bookingModel.markPaid(paidPayment.booking_id);
+            const paidBooking = await bookingModel.findById(paidPayment.booking_id);
+            if (paidBooking?.passenger?.id) {
+              userModel.getFcmToken(paidBooking.passenger.id)
+                .then((t) => sendPush(t, 'Payment Confirmed', `KES ${paidPayment.amount} received. Your ride is confirmed!`))
+                .catch(() => {});
+            }
+            if (paidBooking?.driver?.id) {
+              userModel.getFcmToken(paidBooking.driver.id)
+                .then((t) => sendPush(t, 'Payment Received', `KES ${paidPayment.amount} received for your ride.`))
+                .catch(() => {});
+            }
+          }
+        } catch { /* ignore — callback will handle production */ }
+      }, 5000);
     }
-    const updatedBooking = await bookingModel.findById(bookingId);
 
     return res.status(201).json({
-      payment: paidPayment || payment,
-      booking: updatedBooking,
-      status: 'paid',
-      dispatched: true,
-      mpesaRef,
-      message: 'M-Pesa payment confirmed! Driver has been dispatched.',
+      payment,
+      booking,
+      status: 'pending',
+      checkoutRequestId: stk.checkoutRequestId,
+      message: 'M-Pesa prompt sent to your phone. Complete the payment to confirm your ride.',
     });
   } catch (err) { next(err); }
 };
@@ -139,7 +156,20 @@ const mpesaCallback = async(req, res, next) => {
     if (String(resultCode) === '0') {
       const paidPayment = await paymentModel.markPaid({ checkoutRequestId, mpesaRef: mpesaRef || null });
       if (!paidPayment) return res.status(404).json({ error: { code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' } });
-      if (paidPayment?.booking_id) await bookingModel.markPaid(paidPayment.booking_id);
+      if (paidPayment?.booking_id) {
+        await bookingModel.markPaid(paidPayment.booking_id);
+        const booking = await bookingModel.findById(paidPayment.booking_id);
+        if (booking?.passenger?.id) {
+          userModel.getFcmToken(booking.passenger.id)
+            .then((fcmToken) => sendPush(fcmToken, 'Payment Confirmed', `KES ${paidPayment.amount} received. Your ride is confirmed!`))
+            .catch(() => {});
+        }
+        if (booking?.driver?.id) {
+          userModel.getFcmToken(booking.driver.id)
+            .then((fcmToken) => sendPush(fcmToken, 'Payment Received', `KES ${paidPayment.amount} received for your ride.`))
+            .catch(() => {});
+        }
+      }
     } else {
       const failedPayment = await paymentModel.markFailed(checkoutRequestId);
       if (!failedPayment) return res.status(404).json({ error: { code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' } });

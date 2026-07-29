@@ -55,9 +55,9 @@ const findByPassengerAndRide = async(passengerId, rideId) => {
 const create = async({ rideId, passengerId, driverId, seatsRequested, totalPrice }) => {
   const { rows } = await db.query(
     `INSERT INTO bookings (ride_id, passenger_id, driver_id, seats_requested, total_price, status)
-     VALUES ($1, $2, $3, $4, $5, 'accepted')
+     VALUES ($1, $2, $3, $4, $5, 'pending')
      ON CONFLICT (passenger_id, ride_id)
-     DO UPDATE SET total_price = EXCLUDED.total_price, status = 'accepted'::booking_status
+     DO UPDATE SET total_price = EXCLUDED.total_price, status = 'pending'::booking_status
      RETURNING id`,
     [rideId, passengerId, driverId, seatsRequested, totalPrice],
   );

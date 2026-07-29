@@ -41,8 +41,6 @@ const getAccessToken = async(settings) => {
 };
 
 const initiateStkPush = async({ amount, phone, reference, description }) => {
-  const settings = config();
-  assertConfigured(settings);
   const formattedPhone = formatPhone(phone);
   if (!formattedPhone) {
     const error = new Error('Enter a valid Kenyan M-Pesa number');
@@ -50,6 +48,16 @@ const initiateStkPush = async({ amount, phone, reference, description }) => {
     error.code = 'INVALID_PHONE';
     throw error;
   }
+
+  // In sandbox mode, bypass Safaricom entirely — avoids minimum-amount (10 KES) restrictions
+  // and localhost callback issues. The controller auto-confirms after 5 seconds.
+  if (process.env.MPESA_ENV !== 'production') {
+    const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+    return { checkoutRequestId, phone: formattedPhone, merchantRequestId: `${Date.now()}-sandbox` };
+  }
+
+  const settings = config();
+  assertConfigured(settings);
   const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
   const password = Buffer.from(`${settings.shortcode}${settings.passkey}${timestamp}`).toString('base64');
   const accessToken = await getAccessToken(settings);
@@ -61,7 +69,7 @@ const initiateStkPush = async({ amount, phone, reference, description }) => {
       Password: password,
       Timestamp: timestamp,
       TransactionType: 'CustomerPayBillOnline',
-      Amount: Math.round(amount),
+      Amount: Math.max(1, Math.round(amount)),
       PartyA: formattedPhone,
       PartyB: settings.shortcode,
       PhoneNumber: formattedPhone,
