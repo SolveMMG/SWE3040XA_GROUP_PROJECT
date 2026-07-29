@@ -17,4 +17,7 @@ router.post('/', authenticate, bookingsController.create);
 // PUT /bookings/:id/status (driver)
 router.put('/:id/status', authenticate, bookingsController.updateStatus);
 
+// DELETE /bookings/:id (passenger cancels)
+router.delete('/:id', authenticate, bookingsController.cancel);
+
 module.exports = router;

@@ -221,7 +221,7 @@ export default function LoginPage() {
         </form>
         <div className="security-note">
           <ShieldCheck size={18} />
-          Your account is securely created and authenticated through the RideLoop API.
+          Your account is securely created and authenticated through the RideConnect API.
         </div>
       </section>
     </main>

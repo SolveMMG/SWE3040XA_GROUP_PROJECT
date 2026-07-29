@@ -30,9 +30,14 @@ export default function ListingDetailPage() {
      seller: { id: 1, name: 'Samuel Njuguna (Kenyan Driver)', rating: '4.9', rideCount: 15 },
    }));
 
-   const [message, setMessage] = useState('');
-   const [requestSent, setRequestSent] = useState(false);
+   const [message, setMessage]           = useState('');
+   const [requestSent, setRequestSent]   = useState(false);
    const [dispatchInfo, setDispatchInfo] = useState(null);
+   const [phoneInput, setPhoneInput]     = useState('');
+   const [showPayForm, setShowPayForm]   = useState(false);
+   const [pendingBookingId, setPendingBookingId] = useState(null);
+   const [paying, setPaying]             = useState(false);
+   const [polling, setPolling]           = useState(false);
 
    useEffect(() => {
     if (!rideId) return;
@@ -70,54 +75,86 @@ export default function ListingDetailPage() {
   const mapsUrl = buildMapsUrl(effectivePickup, effectiveDropoff);
 
 
+  const pollPaymentStatus = async (bookingId) => {
+    setPolling(true);
+    setMessage('Waiting for M-Pesa confirmation on your phone…');
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 3000));
+      try {
+        const res = await api(`/payments/booking/${bookingId}`, { token });
+        if (res.status === 'paid') {
+          setPolling(false);
+          setDispatchInfo({
+            driverName: ride.seller?.name || 'Driver',
+            mpesaRef: res.mpesa_ref || res.mpesaRef || '—',
+            totalPrice: res.amount ?? effectivePrice,
+            pickup: effectivePickup,
+            dropoff: effectiveDropoff,
+          });
+          setMessage('Payment confirmed! Your ride is booked.');
+          setRequestSent(true);
+          return;
+        }
+        if (res.status === 'failed') {
+          setPolling(false);
+          setMessage('M-Pesa payment was not completed. Please try again.');
+          return;
+        }
+      } catch { /* keep polling */ }
+    }
+    setPolling(false);
+    setMessage('Payment not confirmed yet — check My Inquiries for your ride status.');
+    setRequestSent(true);
+  };
+
   const book = async () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    setMessage('');
     try {
       const created = await api('/bookings', {
         token,
         method: 'POST',
-        body: JSON.stringify({
-          rideId: Number(rideId),
-          seatsRequested: 1,
-          totalPrice: effectivePrice,
-        }),
+        body: JSON.stringify({ rideId: Number(rideId), seatsRequested: 1, totalPrice: effectivePrice }),
       });
+      setPendingBookingId(created.id);
+      setShowPayForm(true);
+    } catch (err) {
+      setMessage(err.message?.toLowerCase().includes('unauthorized')
+        ? 'Session expired — please sign in again.'
+        : (err.message || 'Booking failed. Please try again.'));
+    }
+  };
 
-      const defaultPhone = '0712345678';
-      const phone = window.prompt(
-        `Your ride request was AUTO-ACCEPTED!\n\nEnter your M-Pesa phone number to receive the payment prompt for ${formatKSh(effectivePrice)}:`,
-        defaultPhone,
-      );
-
-      if (phone) {
-        const payRes = await api('/payments/mpesa/stk-push', {
-          token,
-          method: 'POST',
-          body: JSON.stringify({ bookingId: created.id, phone }),
-        });
-
+  const submitPayment = async (e) => {
+    e.preventDefault();
+    const phone = phoneInput.trim();
+    if (!phone) return;
+    setPaying(true);
+    setShowPayForm(false);
+    try {
+      const payRes = await api('/payments/mpesa/stk-push', {
+        token,
+        method: 'POST',
+        body: JSON.stringify({ bookingId: pendingBookingId, phone }),
+      });
+      if (payRes.status === 'paid') {
         setDispatchInfo({
-          driverName: ride.seller?.name || 'Kenyan Driver',
-          driverPhone: '+254 712 345 678',
-          vehicle: 'KDA 392L (Toyota Fielder - Silver)',
-          mpesaRef: payRes.mpesaRef || 'QJK839210',
-          totalPrice: effectivePrice,
-          eta: '5 - 8 mins',
+          driverName: ride.seller?.name || 'Driver',
+          mpesaRef: payRes.mpesaRef || '—',
+          totalPrice: payRes.payment?.amount ?? effectivePrice,
           pickup: effectivePickup,
           dropoff: effectiveDropoff,
         });
-        setMessage('M-Pesa Payment Confirmed! Driver has been dispatched.');
+        setMessage('Payment confirmed! Your ride is booked.');
+        setRequestSent(true);
       } else {
-        setMessage('Ride request auto-accepted! Redirecting to My Inquiries to pay...');
-        setTimeout(() => navigate('/inquiries'), 1800);
+        await pollPaymentStatus(pendingBookingId);
       }
-
-      setRequestSent(true);
     } catch (err) {
-      if (err.message?.toLowerCase().includes('token') || err.message?.toLowerCase().includes('unauthorized')) {
-        setMessage('Session expired. Please sign out and sign in again to refresh your session token.');
-      } else {
-        setMessage(err.message);
-      }
+      setMessage(err.message || 'Payment failed. Please try again.');
+      setShowPayForm(true);
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -214,16 +251,46 @@ export default function ListingDetailPage() {
               <WalletCards size={18} /> Bookings not allowed for drivers
             </button>
           ) : !isOwner ? (
-            <button type="button" className="button" onClick={book} disabled={requestSent}>
-              <WalletCards size={18} /> {requestSent ? 'Request Sent' : 'Request & Pay via M-Pesa'}
-            </button>
+            <>
+              {showPayForm ? (
+                <form onSubmit={submitPayment} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                    Enter your M-Pesa phone number
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 0712345678"
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    required
+                    style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', width: '100%', boxSizing: 'border-box' }}
+                  />
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>
+                    You will receive a prompt for {formatKSh(effectivePrice)}
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="submit" className="button" style={{ flex: 1 }}>
+                      <WalletCards size={18} /> Send M-Pesa Prompt
+                    </button>
+                    <button type="button" className="button ghost" onClick={() => setShowPayForm(false)} style={{ flex: '0 0 auto' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button type="button" className="button" onClick={book} disabled={requestSent || paying || polling}>
+                  <WalletCards size={18} />
+                  {paying ? 'Sending M-Pesa prompt…' : polling ? 'Waiting for payment…' : requestSent ? 'Request Sent' : 'Request & Pay via M-Pesa'}
+                </button>
+              )}
+            </>
           ) : (
             <Link to={`/rides/${ride.id}/edit`} className="button ghost">
               Edit ride listing
             </Link>
           )}
 
-          {message && <p className={`status-note ${requestSent ? 'success' : ''}`}>{message}</p>}
+          {message && <p className={`status-note ${requestSent && !polling ? 'success' : ''}`}>{message}</p>}
         </aside>
       </div>
 
@@ -252,21 +319,21 @@ export default function ListingDetailPage() {
               </div>
 
               <div className="dispatch-details-grid">
-                <div>
-                  <span>Vehicle Plate</span>
-                  <strong>{dispatchInfo.vehicle}</strong>
-                </div>
-                <div>
-                  <span>Contact Driver</span>
-                  <strong>{dispatchInfo.driverPhone}</strong>
-                </div>
-                <div>
-                  <span>Est. Pickup Arrival</span>
-                  <strong>⚡ {dispatchInfo.eta}</strong>
-                </div>
+                {ride.vehicle && (
+                  <div>
+                    <span>Vehicle</span>
+                    <strong>{ride.vehicle}</strong>
+                  </div>
+                )}
+                {ride.seller?.phone && (
+                  <div>
+                    <span>Contact Driver</span>
+                    <strong>{ride.seller.phone}</strong>
+                  </div>
+                )}
                 <div>
                   <span>M-Pesa Receipt</span>
-                  <strong>#{dispatchInfo.mpesaRef} ({formatKSh(dispatchInfo.totalPrice)})</strong>
+                  <strong>{dispatchInfo.mpesaRef !== '—' ? `#${dispatchInfo.mpesaRef} ` : ''}{formatKSh(dispatchInfo.totalPrice)}</strong>
                 </div>
               </div>
 

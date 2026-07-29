@@ -1,16 +1,15 @@
-import { ArrowUpRight, BarChart3, CarFront, Check, CheckCircle2, Clock, ClipboardList, Compass, DollarSign, Inbox, Leaf, MapPin, MapPinned, Plus, RefreshCw, ShieldCheck, Sparkles, Star, TrendingUp, WalletCards, X, Zap } from 'lucide-react';
+import { ArrowUpRight, BarChart3, CarFront, Check, CheckCircle2, Clock, ClipboardList, Compass, DollarSign, Inbox, Leaf, MapPin, Plus, RefreshCw, ShieldCheck, TrendingUp, WalletCards, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 import { formatKSh } from '../utils/googleMaps.js';
 
-function StatCard({ icon, label, value, subtext, highlight = false, live = false }) {
+function StatCard({ icon, label, value, subtext, highlight = false }) {
   return (
     <div className={`dashboard-card glass ${highlight ? 'highlight-card' : ''}`}>
       <div className="card-top-row">
         <span className="dashboard-icon">{icon}</span>
-        {live && <span className="live-pulse-tag"><span className="pulse-dot" /> Live DB</span>}
       </div>
       <span className="card-label">{label}</span>
       <strong className="card-value">{value}</strong>
@@ -19,32 +18,41 @@ function StatCard({ icon, label, value, subtext, highlight = false, live = false
   );
 }
 
-function ExpenseTrendChart({ monthlyData = [] }) {
+function ExpenseTrendChart({ monthlyData = [], isDriver = false }) {
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [metric, setMetric] = useState('amount'); // 'amount' | 'trips'
+  const [metric, setMetric] = useState('amount');
 
-  const maxAmount = Math.max(...monthlyData.map((d) => (metric === 'amount' ? d.amount : d.trips)), 1);
+  const maxVal = Math.max(...monthlyData.map((d) => (metric === 'amount' ? d.amount : d.trips)), 1);
+
+  if (monthlyData.every((d) => d.amount === 0 && d.trips === 0)) {
+    return (
+      <div className="analytics-chart-card glass">
+        <div className="chart-header">
+          <div>
+            <span className="eyebrow"><TrendingUp size={14} /> {isDriver ? 'Revenue Analytics' : 'Spending Analytics'}</span>
+            <h2>{isDriver ? 'Monthly Driver Revenue' : 'Monthly Ride Expenses'}</h2>
+          </div>
+        </div>
+        <div className="empty-transactions glass" style={{ margin: '16px 0' }}>
+          <BarChart3 size={28} />
+          <p>No data yet. {isDriver ? 'Complete rides to see your revenue.' : 'Book rides to see your spending history.'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="analytics-chart-card glass">
       <div className="chart-header">
         <div>
-          <span className="eyebrow"><TrendingUp size={14} /> Spending & Activity Analytics</span>
-          <h2>{metric === 'amount' ? 'Monthly Ride Expenses' : 'Monthly Completed Trips'}</h2>
+          <span className="eyebrow"><TrendingUp size={14} /> {isDriver ? 'Revenue Analytics' : 'Spending & Activity Analytics'}</span>
+          <h2>{metric === 'amount' ? (isDriver ? 'Monthly Driver Revenue' : 'Monthly Ride Expenses') : 'Monthly Completed Trips'}</h2>
         </div>
         <div className="chart-toggle-buttons">
-          <button
-            type="button"
-            className={`chart-btn ${metric === 'amount' ? 'active' : ''}`}
-            onClick={() => setMetric('amount')}
-          >
-            <DollarSign size={13} /> Expenses (KSh)
+          <button type="button" className={`chart-btn ${metric === 'amount' ? 'active' : ''}`} onClick={() => setMetric('amount')}>
+            <DollarSign size={13} /> {isDriver ? 'Revenue (KSh)' : 'Expenses (KSh)'}
           </button>
-          <button
-            type="button"
-            className={`chart-btn ${metric === 'trips' ? 'active' : ''}`}
-            onClick={() => setMetric('trips')}
-          >
+          <button type="button" className={`chart-btn ${metric === 'trips' ? 'active' : ''}`} onClick={() => setMetric('trips')}>
             <CarFront size={13} /> Trips Count
           </button>
         </div>
@@ -62,61 +70,34 @@ function ExpenseTrendChart({ monthlyData = [] }) {
               <stop offset="100%" stopColor="#0c6b5c" stopOpacity="0.8" />
             </linearGradient>
           </defs>
-
-          {/* Grid lines */}
-          <line x1="0" y1="40" x2="500" y2="40" stroke="rgba(12, 107, 92, 0.1)" strokeDasharray="4 4" />
-          <line x1="0" y1="90" x2="500" y2="90" stroke="rgba(12, 107, 92, 0.1)" strokeDasharray="4 4" />
-          <line x1="0" y1="140" x2="500" y2="140" stroke="rgba(12, 107, 92, 0.1)" strokeDasharray="4 4" />
-
-          {/* Bars */}
+          <line x1="0" y1="40" x2="500" y2="40" stroke="rgba(12,107,92,0.1)" strokeDasharray="4 4" />
+          <line x1="0" y1="90" x2="500" y2="90" stroke="rgba(12,107,92,0.1)" strokeDasharray="4 4" />
+          <line x1="0" y1="140" x2="500" y2="140" stroke="rgba(12,107,92,0.1)" strokeDasharray="4 4" />
           {monthlyData.map((d, idx) => {
             const val = metric === 'amount' ? d.amount : d.trips;
-            const barHeight = Math.max(12, (val / maxAmount) * 130);
+            const barHeight = Math.max(4, (val / maxVal) * 130);
             const x = 30 + idx * 75;
             const y = 160 - barHeight;
             const isHovered = hoveredIndex === idx;
-
             return (
               <g key={d.month} onMouseEnter={() => setHoveredIndex(idx)} onMouseLeave={() => setHoveredIndex(null)}>
-                <rect
-                  x={x}
-                  y={y}
-                  width="36"
-                  height={barHeight}
-                  rx="6"
-                  fill={isHovered ? 'url(#barHoverGradient)' : 'url(#barGradient)'}
-                  className="chart-bar-rect"
-                />
-                <text
-                  x={x + 18}
-                  y="180"
-                  textAnchor="middle"
-                  fill="#475569"
-                  fontSize="11"
-                  fontWeight="600"
-                >
-                  {d.month}
-                </text>
-                <text
-                  x={x + 18}
-                  y={y - 8}
-                  textAnchor="middle"
-                  fill={isHovered ? '#047857' : '#0c6b5c'}
-                  fontSize="11"
-                  fontWeight="700"
-                >
-                  {metric === 'amount' ? (val > 0 ? `${Math.round(val)}` : '0') : val}
-                </text>
+                <rect x={x} y={y} width="36" height={barHeight} rx="6"
+                  fill={isHovered ? 'url(#barHoverGradient)' : 'url(#barGradient)'} className="chart-bar-rect" />
+                <text x={x + 18} y="180" textAnchor="middle" fill="#475569" fontSize="11" fontWeight="600">{d.month}</text>
+                {val > 0 && (
+                  <text x={x + 18} y={y - 6} textAnchor="middle" fill={isHovered ? '#047857' : '#0c6b5c'} fontSize="10" fontWeight="700">
+                    {metric === 'amount' ? Math.round(val) : val}
+                  </text>
+                )}
               </g>
             );
           })}
         </svg>
-
         {hoveredIndex !== null && monthlyData[hoveredIndex] && (
           <div className="chart-tooltip glass">
             <strong>{monthlyData[hoveredIndex].month} Summary</strong>
-            <span>Spent: {formatKSh(monthlyData[hoveredIndex].amount)}</span>
-            <span>Trips Completed: {monthlyData[hoveredIndex].trips}</span>
+            <span>{isDriver ? 'Earned' : 'Spent'}: {formatKSh(monthlyData[hoveredIndex].amount)}</span>
+            <span>Trips: {monthlyData[hoveredIndex].trips}</span>
           </div>
         )}
       </div>
@@ -128,13 +109,13 @@ export default function DashboardPage() {
   const { currentUser, token } = useAuth();
   const isDriver = currentUser.role === 'driver';
 
-  const [counts, setCounts] = useState({ rides: 0, bookings: 0, expenditure: 0 });
+  const [counts, setCounts]               = useState({ rides: 0, bookings: 0, expenditure: 0, earnings: 0 });
   const [recentBookings, setRecentBookings] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
-  const [monthlyData, setMonthlyData] = useState([]);
+  const [monthlyData, setMonthlyData]     = useState([]);
   const [topDestinations, setTopDestinations] = useState([]);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated]     = useState(new Date());
+  const [isRefreshing, setIsRefreshing]   = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -144,86 +125,69 @@ export default function DashboardPage() {
       ]);
 
       const allBookings = bookingsRes.bookings || [];
-      const paidBookings = allBookings.filter(
-        (b) => b.status === 'paid' || b.status === 'completed' || b.status === 'accepted',
-      );
-
+      const paidBookings = allBookings.filter((b) => b.status === 'paid');
       const pending = allBookings.filter((b) => b.status === 'pending');
       setPendingRequests(pending);
 
       const paidTotal = paidBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
 
       setCounts({
-        rides: ridesRes.total || 0,
-        bookings: allBookings.length,
-        expenditure: paidTotal,
+        rides:       ridesRes.total || 0,
+        bookings:    allBookings.length,
+        expenditure: isDriver ? 0 : paidTotal,
+        earnings:    isDriver ? paidTotal : 0,
       });
 
-      // Recent 4 paid bookings
       setRecentBookings(paidBookings.slice(0, 4));
 
-      // Build Monthly Breakdown for past 6 months
-      const months = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-      const monthlyMap = months.map((m, idx) => {
-        // Distribute spending logically based on actual bookings + mock history if needed
-        const monthBookings = paidBookings.filter((b) => {
-          const date = b.created_at ? new Date(b.created_at) : new Date();
-          return date.getMonth() === (1 + idx) % 12;
+      // Build last 6 calendar months dynamically
+      const now = new Date();
+      const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const last6 = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        return { year: d.getFullYear(), month: d.getMonth(), label: monthNames[d.getMonth()] };
+      });
+
+      const monthly = last6.map(({ year, month, label }) => {
+        const mb = paidBookings.filter((b) => {
+          const d = b.created_at ? new Date(b.created_at) : null;
+          return d && d.getFullYear() === year && d.getMonth() === month;
         });
-
-        const monthAmount = monthBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
-
-        // Fallback default realistic data if user has new account
-        const fallbackAmounts = [350, 600, 450, 800, 950, paidTotal > 0 ? paidTotal : 1200];
-        const fallbackTrips = [1, 2, 1, 3, 3, paidBookings.length > 0 ? paidBookings.length : 4];
-
         return {
-          month: m,
-          amount: monthAmount > 0 ? monthAmount : fallbackAmounts[idx],
-          trips: monthBookings.length > 0 ? monthBookings.length : fallbackTrips[idx],
+          month: label,
+          amount: mb.reduce((s, b) => s + (Number(b.total_price) || 0), 0),
+          trips: mb.length,
         };
       });
+      setMonthlyData(monthly);
 
-      setMonthlyData(monthlyMap);
-
-      // Top Visited Destinations
+      // Real top destinations from actual bookings
       const destCounts = {};
       allBookings.forEach((b) => {
-        const dest = b.ride?.destination || 'Nairobi CBD (KICC)';
-        destCounts[dest] = (destCounts[dest] || 0) + 1;
+        const dest = b.ride?.destination;
+        if (dest) destCounts[dest] = (destCounts[dest] || 0) + 1;
       });
+      const totalDest = Object.values(destCounts).reduce((s, n) => s + n, 0) || 1;
+      const sorted = Object.entries(destCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([name, count]) => ({ name, count, percentage: Math.round((count / totalDest) * 100) }));
+      setTopDestinations(sorted);
 
-      const defaultDestinations = [
-        { name: 'KICC & Nairobi CBD', count: 5, percentage: 85 },
-        { name: 'Roysambu (TRM Mall)', count: 4, percentage: 70 },
-        { name: 'Westlands (Sarit Centre)', count: 3, percentage: 55 },
-        { name: 'Karura Forest Reserve', count: 2, percentage: 40 },
-      ];
-
-      setTopDestinations(defaultDestinations);
       setLastUpdated(new Date());
-    } catch (_err) {
-      // Fallback state on error
-    }
+    } catch { /* keep current state on error */ }
   }, [isDriver, token]);
 
   const updateBookingStatus = async (id, status) => {
     try {
-      await api(`/bookings/${id}/status`, {
-        token,
-        method: 'PUT',
-        body: JSON.stringify({ status }),
-      });
+      await api(`/bookings/${id}/status`, { token, method: 'PUT', body: JSON.stringify({ status }) });
       fetchDashboardData();
-    } catch (err) {
-      console.error('Failed to update booking status', err);
-    }
+    } catch { /* silent */ }
   };
 
-  // REAL-TIME DATABASE SYNCHRONIZATION POLLING (every 3 seconds)
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 3000);
+    const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
@@ -233,65 +197,93 @@ export default function DashboardPage() {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const avgCostPerTrip = counts.bookings > 0 ? Math.round(counts.expenditure / Math.max(1, counts.bookings)) : 0;
-  const estimatedKm = (counts.bookings || 4) * 12.5;
-  const co2SavedKg = (estimatedKm * 0.12).toFixed(1);
+  const avgCostPerTrip = counts.bookings > 0 ? Math.round((counts.expenditure || counts.earnings) / Math.max(1, recentBookings.length)) : 0;
+  const estimatedKm   = recentBookings.length * 12.5;
+  const co2SavedKg    = (estimatedKm * 0.12).toFixed(1);
 
   return (
     <section className="page dashboard-page analytics-dashboard">
-      {/* Header with Real-Time Database Indicator */}
       <div className="section-heading-row">
         <div>
           <span className="eyebrow">{isDriver ? 'Driver Analytics & Earnings' : 'Passenger Spendings & Trips'}</span>
-          <h1>{isDriver ? 'Real-Time Driver Revenue & Trip Analytics' : 'Real-Time Ride Expenses & Trip Dashboard'}</h1>
+          <h1>{isDriver ? 'Driver Revenue & Trip Analytics' : 'Ride Expenses & Trip Dashboard'}</h1>
         </div>
-        <div className="sync-status-box glass">
-          <button
-            type="button"
-            className={`refresh-icon-btn ${isRefreshing ? 'spinning' : ''}`}
-            onClick={handleManualRefresh}
-            title="Refresh Realtime Database"
-          >
-            <RefreshCw size={15} />
-          </button>
-          <div>
-            <span className="sync-label"><span className="pulse-dot green" /> Realtime Database Active</span>
-            <span className="sync-time">Updated: {lastUpdated.toLocaleTimeString()}</span>
-          </div>
-        </div>
+        <button type="button" className={`refresh-icon-btn ${isRefreshing ? 'spinning' : ''}`} onClick={handleManualRefresh} title="Refresh">
+          <RefreshCw size={15} />
+        </button>
       </div>
 
-      {/* 4 Stat Cards Grid (Includes Real-time Total Spent / Revenue) */}
+      {/* Stat Cards */}
       <div className="dashboard-grid">
         <StatCard
           icon={<WalletCards size={24} />}
-          label={isDriver ? 'Realtime Driver Revenue' : 'Realtime Total Spent'}
-          value={formatKSh(counts.expenditure)}
-          subtext="Includes all past paid & completed trips"
-          highlight
-          live
+          label={isDriver ? 'Total Earnings' : 'Total Spent'}
+          value={formatKSh(isDriver ? counts.earnings : counts.expenditure)}
+          subtext={`From ${recentBookings.length} completed ride(s)`}
+          highlight live
         />
         <StatCard
           icon={<ClipboardList size={24} />}
-          label={isDriver ? 'Total Ride Inquiries' : 'Total Trips Booked'}
+          label={isDriver ? 'Total Inquiries' : 'Total Bookings'}
           value={counts.bookings}
-          subtext={`${recentBookings.length} completed transactions`}
+          subtext={`${pendingRequests.length} pending`}
         />
         <StatCard
           icon={<Compass size={24} />}
           label="Avg. Fare per Trip"
-          value={formatKSh(avgCostPerTrip)}
-          subtext="Distance rate (5 KSh/km step)"
+          value={avgCostPerTrip > 0 ? formatKSh(avgCostPerTrip) : '—'}
+          subtext="Based on completed trips"
         />
         <StatCard
           icon={<Leaf size={24} />}
           label="CO₂ Footprint Saved"
-          value={`${co2SavedKg} kg`}
-          subtext={`Est. ${estimatedKm.toFixed(0)} km carpooled`}
+          value={recentBookings.length > 0 ? `${co2SavedKg} kg` : '—'}
+          subtext={recentBookings.length > 0 ? `Est. ${estimatedKm.toFixed(0)} km carpooled` : 'Complete rides to see impact'}
         />
       </div>
 
-      {/* Driver Incoming Requests Action Queue (Driver-Only Feature) */}
+      {/* Driver earnings breakdown */}
+      {isDriver && (
+        <div className="pending-requests-card glass">
+          <div className="section-header-row">
+            <div className="title-box">
+              <WalletCards size={20} className="header-icon" />
+              <div>
+                <h3>Earnings Breakdown</h3>
+                <span>Revenue from completed passenger payments</span>
+              </div>
+            </div>
+          </div>
+          {recentBookings.length === 0 ? (
+            <div className="empty-transactions glass">
+              <DollarSign size={24} />
+              <p>No earnings yet. Accept passenger requests to start earning.</p>
+            </div>
+          ) : (
+            <div className="transactions-list">
+              {recentBookings.map((b, idx) => (
+                <div key={b.id || idx} className="transaction-row">
+                  <div className="tx-left">
+                    <span className="tx-icon-circle"><CheckCircle2 size={16} /></span>
+                    <div>
+                      <strong className="tx-route">{b.ride?.origin || 'Pickup'} ➔ {b.ride?.destination || 'Destination'}</strong>
+                      <span className="tx-meta">
+                        Passenger: {b.passenger?.name || '—'} · {b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Recently'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="tx-right">
+                    <strong className="tx-amount">{formatKSh(Number(b.total_price) || 0)}</strong>
+                    <span className="tx-badge paid">● Paid</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Incoming Requests (driver only) */}
       {isDriver && (
         <div className="pending-requests-card glass">
           <div className="section-header-row">
@@ -299,16 +291,15 @@ export default function DashboardPage() {
               <Inbox size={20} className="header-icon" />
               <div>
                 <h3>Incoming Passenger Requests</h3>
-                <span>1-Click Accept or Decline passenger seat bookings</span>
+                <span>Accept or decline pending seat requests</span>
               </div>
             </div>
             <span className="pending-badge-count">{pendingRequests.length} Pending</span>
           </div>
-
           {pendingRequests.length === 0 ? (
             <div className="empty-transactions glass">
               <CheckCircle2 size={24} />
-              <p>No pending passenger requests at the moment. Publish a new ride offer to receive requests.</p>
+              <p>No pending requests. Publish a ride offer to receive passenger requests.</p>
             </div>
           ) : (
             <div className="pending-requests-list">
@@ -318,9 +309,7 @@ export default function DashboardPage() {
                     <span className="req-avatar">{b.passenger?.name?.[0] || 'P'}</span>
                     <div>
                       <strong className="req-passenger-name">{b.passenger?.name || 'Passenger'}</strong>
-                      <span className="req-route">
-                        {b.ride?.origin || 'Pickup'} ➔ {b.ride?.destination || 'Destination'}
-                      </span>
+                      <span className="req-route">{b.ride?.origin || 'Pickup'} ➔ {b.ride?.destination || 'Destination'}</span>
                     </div>
                   </div>
                   <div className="req-middle">
@@ -328,18 +317,10 @@ export default function DashboardPage() {
                     <strong className="req-price">{formatKSh(b.total_price)}</strong>
                   </div>
                   <div className="req-actions">
-                    <button
-                      type="button"
-                      className="button success compact"
-                      onClick={() => updateBookingStatus(b.id, 'accepted')}
-                    >
-                      <Check size={15} /> Accept Request
+                    <button type="button" className="button success compact" onClick={() => updateBookingStatus(b.id, 'accepted')}>
+                      <Check size={15} /> Accept
                     </button>
-                    <button
-                      type="button"
-                      className="button danger compact"
-                      onClick={() => updateBookingStatus(b.id, 'declined')}
-                    >
+                    <button type="button" className="button danger compact" onClick={() => updateBookingStatus(b.id, 'declined')}>
                       <X size={15} /> Decline
                     </button>
                   </div>
@@ -350,55 +331,58 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Interactive Expense Trend Chart & Top Destinations */}
+      {/* Chart + Destinations */}
       <div className="dashboard-analytics-split">
-        <ExpenseTrendChart monthlyData={monthlyData} />
+        <ExpenseTrendChart monthlyData={monthlyData} isDriver={isDriver} />
 
-        {/* Top Destination Insights */}
         <div className="analytics-destinations-card glass">
           <div className="card-title-row">
             <MapPin size={20} className="header-icon" />
             <div>
               <h3>Frequent Destinations</h3>
-              <span>Your top visited places</span>
+              <span>Based on your real booking history</span>
             </div>
           </div>
-
-          <div className="destinations-progress-list">
-            {topDestinations.map((d) => (
-              <div key={d.name} className="dest-progress-item">
-                <div className="dest-info-row">
-                  <strong className="dest-name">{d.name}</strong>
-                  <span className="dest-trips-count">{d.count} trips</span>
+          {topDestinations.length === 0 ? (
+            <div className="empty-transactions glass" style={{ margin: '16px 0' }}>
+              <MapPin size={24} />
+              <p>{isDriver ? 'No trips completed yet.' : 'Book rides to see your top destinations.'}</p>
+            </div>
+          ) : (
+            <div className="destinations-progress-list">
+              {topDestinations.map((d) => (
+                <div key={d.name} className="dest-progress-item">
+                  <div className="dest-info-row">
+                    <strong className="dest-name">{d.name}</strong>
+                    <span className="dest-trips-count">{d.count} trip{d.count !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="progress-bar-bg">
+                    <div className="progress-bar-fill" style={{ width: `${d.percentage}%` }} />
+                  </div>
                 </div>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar-fill" style={{ width: `${d.percentage}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Recent Real-Time Paid Transactions Feed */}
+      {/* Recent Transactions */}
       <div className="recent-transactions-section glass">
         <div className="section-header-row">
           <div className="title-box">
             <Clock size={20} className="header-icon" />
             <div>
-              <h3>{isDriver ? 'Recent Driver Payouts & Receipts' : 'Recent Realtime Transactions'}</h3>
-              <span>Live M-Pesa STK Push payment receipts</span>
+              <h3>{isDriver ? 'Recent Payouts' : 'Recent Transactions'}</h3>
+              <span>Completed M-Pesa payments</span>
             </div>
           </div>
-          <Link to="/inquiries" className="button ghost compact">
-            View All Inquiries <ArrowUpRight size={14} />
-          </Link>
+          <Link to="/inquiries" className="button ghost compact">View All <ArrowUpRight size={14} /></Link>
         </div>
-
         {recentBookings.length === 0 ? (
           <div className="empty-transactions glass">
             <CheckCircle2 size={24} />
-            <p>No recent paid transactions yet. Book your first ride to see realtime receipts.</p>
+            <p>{isDriver ? 'No completed rides yet.' : 'No paid trips yet. Book your first ride.'}</p>
+            {!isDriver && <Link to="/" className="button compact" style={{ marginTop: '12px' }}>Browse Rides</Link>}
           </div>
         ) : (
           <div className="transactions-list">
@@ -407,17 +391,16 @@ export default function DashboardPage() {
                 <div className="tx-left">
                   <span className="tx-icon-circle"><CheckCircle2 size={16} /></span>
                   <div>
-                    <strong className="tx-route">
-                      {b.ride?.origin || 'Nairobi Pickup'} ➔ {b.ride?.destination || 'Nairobi Destination'}
-                    </strong>
+                    <strong className="tx-route">{b.ride?.origin || 'Pickup'} ➔ {b.ride?.destination || 'Destination'}</strong>
                     <span className="tx-meta">
-                      M-Pesa Ref: STK-{String(b.id || idx + 100).padStart(5, '0')} • {b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Today'}
+                      {isDriver ? `Passenger: ${b.passenger?.name || '—'}` : `Driver: ${b.driver?.name || '—'}`}
+                      {' · '}{b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Recently'}
                     </span>
                   </div>
                 </div>
                 <div className="tx-right">
-                  <strong className="tx-amount">{formatKSh(Number(b.total_price) || 250)}</strong>
-                  <span className="tx-badge paid">● Paid via M-Pesa</span>
+                  <strong className="tx-amount">{formatKSh(Number(b.total_price) || 0)}</strong>
+                  <span className="tx-badge paid">● Paid</span>
                 </div>
               </div>
             ))}
@@ -425,18 +408,12 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Account Actions Bar */}
+      {/* Account Actions */}
       <div className="dashboard-actions glass">
-        <div>
-          <ShieldCheck size={24} />
-          <h2>Live Database Account Protection</h2>
-        </div>
+        <div><ShieldCheck size={24} /><h2>Quick Actions</h2></div>
         <div className="action-row">
-          {isDriver && (
-            <Link to="/rides/new" className="button">
-              <Plus size={18} /> Offer ride
-            </Link>
-          )}
+          {isDriver && <Link to="/rides/new" className="button"><Plus size={18} /> Offer Ride</Link>}
+          {!isDriver && <Link to="/" className="button"><CarFront size={18} /> Browse Rides</Link>}
           <Link to="/inquiries" className="button ghost">Ride Requests</Link>
           <Link to="/profile" className="button ghost">Profile</Link>
         </div>

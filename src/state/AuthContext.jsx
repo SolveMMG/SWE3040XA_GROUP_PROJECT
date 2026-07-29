@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react';
+import { requestNotificationPermission } from '../lib/firebase.js';
 import { api, userFromApi } from '../services/api.js';
 
 const AuthContext = createContext(null);
@@ -16,6 +17,10 @@ export function AuthProvider({ children }) {
     localStorage.setItem(tokenKey, nextToken);
     localStorage.setItem(userKey, JSON.stringify(nextUser));
     setToken(nextToken); setCurrentUser(nextUser);
+    // Request notification permission and save FCM token in the background
+    requestNotificationPermission().then((fcmToken) => {
+      if (fcmToken) api('/users/me/fcm-token', { token: nextToken, method: 'PUT', body: JSON.stringify({ token: fcmToken }) }).catch(() => {});
+    });
     return nextUser;
   };
   const signIn = async ({ email, password }) => {
