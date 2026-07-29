@@ -1,8 +1,9 @@
+require('dotenv').config();
 const jwt    = require('jsonwebtoken');
 const crypto = require('crypto');
 const authTokenModel = require('../models/authToken.model');
 
-const accessSecret = () => process.env.JWT_SECRET;
+const accessSecret = () => process.env.JWT_SECRET || 'rideloop_default_fallback_jwt_secret_key_2026';
 const accessExpiry = () => process.env.JWT_EXPIRES_IN || '1h';
 
 const parseDurationMs = (str = '30d') => {
@@ -18,8 +19,8 @@ const parseDurationMs = (str = '30d') => {
 const hashToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
-const generateAccessToken = (userId, email) =>
-  jwt.sign({ userId, email }, accessSecret(), { expiresIn: accessExpiry() });
+const generateAccessToken = (userId, email, role) =>
+  jwt.sign({ userId, email, role }, accessSecret(), { expiresIn: accessExpiry() });
 
 const generateRefreshToken = async(userId) => {
   const plaintext  = crypto.randomBytes(40).toString('hex');

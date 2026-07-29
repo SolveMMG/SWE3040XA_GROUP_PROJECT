@@ -9,7 +9,12 @@ process.env.FRONTEND_URL   = 'http://localhost:3000';
 // ─── mutable mocks ────────────────────────────────────────────────────────────
 
 const userModel = {
-  findById: async () => null,
+  findByEmail:        async () => null,
+  findAuthByEmail:    async () => null,
+  create:             async () => null,
+  findById:           async () => null,
+  update:             async () => null,
+  remove:             async () => {},
 };
 
 const authTokenModel = {
@@ -56,9 +61,107 @@ const makeRes = () => {
 };
 
 const base = {
-  id: 1, name: 'Alice', email: 'alice@example.com', role: 'customer',
+  id: 1, name: 'Alice', email: 'alice@example.com', role: 'passenger',
   phone: null, bio: null, photo_url: null, avg_rating: 0, profile_data: null,
 };
+
+// ─── register ─────────────────────────────────────────────────────────────────
+
+describe('auth.controller – register', () => {
+  it('400 when required fields are missing', async () => {
+    const req = { body: { name: 'Alice' } };
+    const res = makeRes();
+    await authController.register(req, res, (err) => { throw err; });
+    assert.equal(res._status, 400);
+    assert.equal(res._body.error.code, 'MISSING_FIELDS');
+  });
+
+  it('409 when email is already taken', async () => {
+    userModel.findAuthByEmail = async () => ({ id: 99, email: 'taken@example.com' });
+    const req = { body: { name: 'Alice', email: 'taken@example.com', password: 'password123', role: 'passenger' } };
+    const res = makeRes();
+    await authController.register(req, res, (err) => { throw err; });
+    assert.equal(res._status, 409);
+    assert.equal(res._body.error.code, 'EMAIL_IN_USE');
+  });
+
+  it('201 with tokens on successful customer registration', async () => {
+    userModel.findAuthByEmail = async () => null;
+    userModel.create          = async () => ({ ...base });
+    userModel.update          = async () => ({ ...base });
+    const req = { body: { name: 'Alice', email: 'alice@example.com', password: 'password123', role: 'passenger' } };
+    const res = makeRes();
+    await authController.register(req, res, (err) => { throw err; });
+    assert.equal(res._status, 201);
+    assert.equal(res._body.token, 'mock-access-token');
+    assert.equal(res._body.refreshToken, 'mock-refresh-token');
+    assert.equal(res._body.user.email, 'alice@example.com');
+  });
+
+  it('201 with driver role', async () => {
+    userModel.findAuthByEmail = async () => null;
+    userModel.create          = async () => ({ ...base, role: 'driver' });
+    userModel.update          = async () => ({ ...base, role: 'driver' });
+    const req = { body: { name: 'Bob', email: 'bob@example.com', password: 'password123', role: 'driver', vehicle: 'Toyota', licensePlate: 'ABC123', seats: 4 } };
+    const res = makeRes();
+    await authController.register(req, res, (err) => { throw err; });
+    assert.equal(res._status, 201);
+    assert.equal(res._body.user.role, 'driver');
+  });
+});
+
+// ─── login ────────────────────────────────────────────────────────────────────
+
+describe('auth.controller – login', () => {
+  it('400 when email or password is missing', async () => {
+    const req = { body: { email: 'a@b.com' } };
+    const res = makeRes();
+    await authController.login(req, res, (err) => { throw err; });
+    assert.equal(res._status, 400);
+    assert.equal(res._body.error.code, 'MISSING_FIELDS');
+  });
+
+  it('401 when user is not found', async () => {
+    userModel.findAuthByEmail = async () => null;
+    const req = { body: { email: 'nobody@example.com', password: 'password123' } };
+    const res = makeRes();
+    await authController.login(req, res, (err) => { throw err; });
+    assert.equal(res._status, 401);
+    assert.equal(res._body.error.code, 'INVALID_CREDENTIALS');
+  });
+
+  it('401 when user has no password_hash', async () => {
+    userModel.findAuthByEmail = async () => ({ ...base, password_hash: null });
+    const req = { body: { email: 'alice@example.com', password: 'any' } };
+    const res = makeRes();
+    await authController.login(req, res, (err) => { throw err; });
+    assert.equal(res._status, 401);
+    assert.equal(res._body.error.code, 'INVALID_CREDENTIALS');
+  });
+
+  it('401 when password does not match', async () => {
+    userModel.findAuthByEmail = async () => ({ ...base, password_hash: 'hashed:correct-password' });
+    const req = { body: { email: 'alice@example.com', password: 'wrong-password' } };
+    const res = makeRes();
+    await authController.login(req, res, (err) => { throw err; });
+    assert.equal(res._status, 401);
+    assert.equal(res._body.error.code, 'INVALID_CREDENTIALS');
+  });
+
+  it('200 with tokens on successful login', async () => {
+    userModel.findAuthByEmail = async () => ({ ...base, id: 1, password_hash: 'hashed:correct-password' });
+    userModel.findById        = async () => ({ ...base, id: 1 });
+    tokenService.generateAccessToken  = () => 'mock-access-token';
+    tokenService.generateRefreshToken = async () => 'mock-refresh-token';
+    const req = { body: { email: 'alice@example.com', password: 'correct-password' } };
+    const res = makeRes();
+    await authController.login(req, res, (err) => { throw err; });
+    assert.equal(res._status, 200);
+    assert.equal(res._body.token, 'mock-access-token');
+    assert.equal(res._body.refreshToken, 'mock-refresh-token');
+    assert.equal(res._body.user.email, 'alice@example.com');
+  });
+});
 
 // ─── refresh ──────────────────────────────────────────────────────────────────
 

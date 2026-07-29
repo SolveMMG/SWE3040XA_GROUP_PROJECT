@@ -15,7 +15,7 @@ const authenticate = (req, res, next) => {
   }
   try {
     const payload = tokenService.verifyAccessToken(token);
-    req.user = { userId: payload.userId, email: payload.email };
+    req.user = { userId: payload.userId, email: payload.email, role: payload.role };
     return next();
   } catch (err) {
     const { status, code, message } = tokenService.classifyJwtError(err);
@@ -28,7 +28,7 @@ const optionalAuthenticate = (req, _res, next) => {
   if (token) {
     try {
       const payload = tokenService.verifyAccessToken(token);
-      req.user = { userId: payload.userId, email: payload.email };
+req.user = { userId: payload.userId, email: payload.email, role: payload.role };
     } catch (_err) { /* ignore */ }
   }
   return next();

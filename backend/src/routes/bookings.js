@@ -1,13 +1,20 @@
-const express           = require('express');
-const bookingController = require('../controllers/booking.controller');
-const { authenticate }  = require('../middleware/auth');
-const { rules }         = require('../middleware/validate');
+const express = require('express');
+
+const bookingsController = require('../controllers/bookings.controller');
+const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/',                  authenticate, rules.createBooking, bookingController.createBooking);
-router.get('/',                   authenticate, bookingController.listBookings);
-router.patch('/:id/accept',       authenticate, bookingController.acceptBooking);
-router.patch('/:id/decline',      authenticate, bookingController.declineBooking);
+// GET /bookings/me?role=sent|received&status=
+router.get('/me', authenticate, bookingsController.findByUser);
+
+// GET /bookings/:id
+router.get('/:id', authenticate, bookingsController.findById);
+
+// POST /bookings (passenger)
+router.post('/', authenticate, bookingsController.create);
+
+// PUT /bookings/:id/status (driver)
+router.put('/:id/status', authenticate, bookingsController.updateStatus);
 
 module.exports = router;

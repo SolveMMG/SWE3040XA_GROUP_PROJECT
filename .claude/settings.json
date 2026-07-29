@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /home/mikemur/Documents/GROUP_PROJECT status)",
+      "Bash(git -C /home/mikemur/Documents/GROUP_PROJECT log --oneline origin/main..HEAD)"
+    ]
+  }
+}

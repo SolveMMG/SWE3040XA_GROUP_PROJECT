@@ -7,8 +7,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run && node --test tests/*.test.js",
+    "test:watch": "vitest",
+    "quality": "npm run build && npm test && npm --prefix backend run quality"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.7.0",

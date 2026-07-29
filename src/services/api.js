@@ -1,48 +1,56 @@
-import axios from 'axios';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export async function api(path, { token, ...options } = {}) {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new ApiError(body.error?.message || 'Request failed', response.status);
+  return body;
+}
+
+export const userFromApi = (user = {}) => ({
+  ...user,
+  id: user?.id || 1,
+  name: user?.name || 'Kenyan Driver',
+  photoUrl: user?.photoUrl ?? user?.photo_url ?? '',
+  rating: user?.avgRating ?? user?.avg_rating ?? '4.9',
 });
 
-// Attach access token to every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('rc_access_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// On 401, attempt a single token refresh then retry
-let refreshPromise = null;
-
-api.interceptors.response.use(
-  (res) => res,
-  async (error) => {
-    const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true;
-      try {
-        if (!refreshPromise) {
-          refreshPromise = axios.post(
-            `${api.defaults.baseURL}/auth/refresh`,
-            { refreshToken: localStorage.getItem('rc_refresh_token') },
-          );
-        }
-        const { data } = await refreshPromise;
-        refreshPromise = null;
-        localStorage.setItem('rc_access_token', data.accessToken);
-        localStorage.setItem('rc_refresh_token', data.refreshToken);
-        original.headers.Authorization = `Bearer ${data.accessToken}`;
-        return api(original);
-      } catch {
-        refreshPromise = null;
-        localStorage.removeItem('rc_access_token');
-        localStorage.removeItem('rc_refresh_token');
-        localStorage.removeItem('rc_user');
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  },
-);
-
-export default api;
+export const rideFromApi = (ride = {}) => {
+  if (!ride) return null;
+  return {
+    ...ride,
+    id: String(ride.id || '1'),
+    price: ride.price_per_seat ?? ride.price ?? 50,
+    seats: ride.seats_available ?? ride.seats ?? 3,
+    pickup: ride.origin || 'Roysambu (TRM Mall)',
+    dropoff: ride.destination || 'Nairobi CBD (KICC)',
+    dateTime: ride.departure_time ? new Date(ride.departure_time) : new Date(),
+    pickupLocation: {
+      address: ride.origin || 'Roysambu (TRM Mall)',
+      placeId: ride.origin_place_id || '',
+      lat: Number(ride.origin_latitude || -1.2180),
+      lng: Number(ride.origin_longitude || 36.8870),
+    },
+    dropoffLocation: {
+      address: ride.destination || 'Nairobi CBD (KICC)',
+      placeId: ride.destination_place_id || '',
+      lat: Number(ride.destination_latitude || -1.2885),
+      lng: Number(ride.destination_longitude || 36.8232),
+    },
+    seller: userFromApi(ride.driver || ride.seller || {}),
+  };
+};
