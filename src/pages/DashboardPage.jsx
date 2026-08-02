@@ -202,9 +202,10 @@ export default function DashboardPage() {
 
       setTopDestinations(defaultDestinations);
       setLastUpdated(new Date());
-    } catch (_err) {
-      // Fallback state on error
-    }
+    } 
+catch (err) {
+  console.error("Dashboard loading failed:", err);
+}
   }, [isDriver, token]);
 
   const updateBookingStatus = async (id, status) => {
@@ -220,10 +221,10 @@ export default function DashboardPage() {
     }
   };
 
-  // REAL-TIME DATABASE SYNCHRONIZATION POLLING (every 3 seconds)
+  // REAL-TIME DATABASE SYNCHRONIZATION POLLING (every 30seconds)
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 3000);
+    const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
