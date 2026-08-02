@@ -68,7 +68,7 @@ export default function ListingDetailPage() {
   const effectiveDropoff = customDropoff?.name || customDropoff?.address || ride.dropoff;
   const effectiveDropoffCoords = customDropoff?.lat && customDropoff?.lng ? { lat: customDropoff.lat, lng: customDropoff.lng } : ride.dropoffLocation;
 
-  const effectivePrice = calculatedFare !== undefined && calculatedFare !== null ? calculatedFare : ride.price;
+  const effectivePrice = ride.price ?? calculatedFare;
 
   const isOwner = currentUser?.id != null && currentUser.id === ride.seller?.id;
   const dist = distanceInMiles(effectivePickupCoords, effectiveDropoffCoords);
@@ -238,8 +238,8 @@ export default function ListingDetailPage() {
           </div>
 
           <div className="price-box">
-            <span>Total Calculated Fare</span>
-            <strong>{formatKSh(effectivePrice)} <small>/ passenger</small></strong>
+            <span>Price per Seat</span>
+            <strong>{formatKSh(effectivePrice)} <small>/ seat</small></strong>
           </div>
 
           {!isAuthenticated ? (
