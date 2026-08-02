@@ -23,6 +23,7 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+const [showPassword, setShowPassword] = useState(false);
   const target = location.state?.from?.pathname || '/';
 
   const getPostAuthDestination = (role) => {
