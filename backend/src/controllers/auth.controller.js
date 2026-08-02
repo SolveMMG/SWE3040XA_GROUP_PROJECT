@@ -46,7 +46,7 @@ const googleCallback = async(req, res, next) => {
   try {
     const { id, name, email, photo_url, isNewUser } = req.user;
 
-const accessToken = tokenService.generateAccessToken(id, email, req.user.role);
+    const accessToken = tokenService.generateAccessToken(id, email, req.user.role);
     const refreshToken = await tokenService.generateRefreshToken(id);
 
     // Prune any expired tokens on each login — fire-and-forget, non-blocking

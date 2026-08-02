@@ -108,7 +108,7 @@ const initiateStkPush = async(req, res, next) => {
 
     // In sandbox Safaricom cannot reach localhost, so auto-confirm after 5s to simulate the real callback
     if (process.env.MPESA_ENV !== 'production') {
-      setTimeout(async () => {
+      setTimeout(async() => {
         try {
           const mpesaRef = `QJK${Math.floor(100000 + Math.random() * 900000)}`;
           const paidPayment = await paymentModel.markPaid({ checkoutRequestId: stk.checkoutRequestId, mpesaRef });

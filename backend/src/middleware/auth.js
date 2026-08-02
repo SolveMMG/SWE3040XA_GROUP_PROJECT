@@ -28,7 +28,7 @@ const optionalAuthenticate = (req, _res, next) => {
   if (token) {
     try {
       const payload = tokenService.verifyAccessToken(token);
-req.user = { userId: payload.userId, email: payload.email, role: payload.role };
+      req.user = { userId: payload.userId, email: payload.email, role: payload.role };
     } catch (_err) { /* ignore */ }
   }
   return next();
