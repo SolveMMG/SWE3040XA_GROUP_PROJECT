@@ -5,6 +5,7 @@ import SitesMap from '../components/SitesMap.jsx';
 import { api } from '../services/api.js';
 import { useAuth } from '../state/AuthContext.jsx';
 
+
 const PLACEHOLDER_IMAGES = {
   'Roysambu': 'https://images.unsplash.com/photo-1569336415962-a4bd9f609cd1?w=200&h=150&fit=crop',
   'Westlands': 'https://images.unsplash.com/photo-1570464197285-9949814674a7?w=200&h=150&fit=crop',
