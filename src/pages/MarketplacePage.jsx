@@ -548,7 +548,8 @@ export default function MarketplacePage() {
                             </div>
 
                             <div className="driver-route-subtitle">
-                              <span>Stationed at: <strong>{ride.pickup}</strong></span>
+                              <span><MapPin size={12} /> <strong>{ride.pickup}</strong></span>
+                              <span><Navigation size={12} /> <strong>{ride.dropoff}</strong></span>
                             </div>
 
                             <div className="driver-badges">
@@ -566,8 +567,8 @@ export default function MarketplacePage() {
 
                         <div className="driver-card-right">
                           <div className="fare-box">
-                            <strong className="fare-price">{formatKSh(totalItemFare)}</strong>
-                            <span className="fare-sub">total fare</span>
+                            <strong className="fare-price">{formatKSh(ride.price)}</strong>
+                            <span className="fare-sub">per seat</span>
                           </div>
 
                           {isAuthenticated && currentUser?.role !== 'driver' ? (
@@ -576,7 +577,7 @@ export default function MarketplacePage() {
                               state={{
                                 customPickup: originLocation,
                                 customDropoff: destinationLocation,
-                                calculatedFare: totalItemFare,
+                                calculatedFare: ride.price,
                                 pickupDistanceKm: distKmNum,
                                 tripDistanceKm: tripDistanceKm,
                               }}
