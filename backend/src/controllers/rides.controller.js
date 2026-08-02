@@ -1,5 +1,4 @@
 const rideModel = require('../models/ride.model');
-const userModel = require('../models/user.model');
 
 const ensureFields = (body, fields) => {
   for (const f of fields) {
@@ -108,10 +107,6 @@ const findById = async(req, res, next) => {
 
 const create = async(req, res, next) => {
   try {
-    const driver = await userModel.findById(req.user.userId);
-    if (!driver?.is_approved) {
-      return res.status(403).json({ error: { code: 'DRIVER_NOT_APPROVED', message: 'Your driver account must be approved before publishing rides' } });
-    }
     const { origin, destination, departureTime, seatsAvailable, pricePerSeat } = req.body;
     const check = ensureFields(req.body, ['origin', 'destination', 'departureTime', 'seatsAvailable', 'pricePerSeat']);
     if (!check.ok) return res.status(400).json({ error: { code: 'MISSING_FIELD', message: check.message } });

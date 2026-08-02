@@ -11,11 +11,9 @@ const rideModel = {
   isOwner:  async () => false,
 };
 
-const userModel = { findById: async () => ({ id: 2, is_approved: true }) };
 
 const fromSrc = (rel) => require.resolve(path.join(__dirname, '../src', rel));
 require.cache[fromSrc('models/ride.model')]  = { id: fromSrc('models/ride.model'),  filename: fromSrc('models/ride.model'),  loaded: true, exports: rideModel };
-require.cache[fromSrc('models/user.model')]  = { id: fromSrc('models/user.model'),  filename: fromSrc('models/user.model'),  loaded: true, exports: userModel };
 
 const rideController = require('../src/controllers/rides.controller');
 

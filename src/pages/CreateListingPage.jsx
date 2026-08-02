@@ -286,8 +286,8 @@ export default function CreateListingPage({ mode = 'create' }) {
               <DollarSign size={18} />
               <input
                 type="number"
-                min="50"
-                step="50"
+                min="1"
+                step="any"
                 value={form.price}
                 onChange={(e) => { setPriceEdited(true); setField('price', e.target.value); }}
                 required
