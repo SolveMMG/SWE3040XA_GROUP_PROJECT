@@ -12,14 +12,15 @@ const paymentModel = {
 const bookingModel = {
   findById:     async () => null,
   updateStatus: async () => {},
+  markPaid:     async () => {},
 };
 
 // mpesa.service makes real HTTP calls — must mock.
 // The controller destructures initiateSTKPush at load time, so we wrap it
 // via an indirect object so tests can swap the implementation at runtime.
-const mpesaImpl = { initiateSTKPush: async () => ({ CheckoutRequestID: 'CHK-123' }) };
+const mpesaImpl = { initiateStkPush: async () => ({ checkoutRequestId: 'CHK-123' }) };
 const mpesaService = {
-  initiateSTKPush: (...args) => mpesaImpl.initiateSTKPush(...args),
+  initiateStkPush: (...args) => mpesaImpl.initiateStkPush(...args),
 };
 
 // firebase.service no-ops without credentials
@@ -28,7 +29,7 @@ require.cache[fromSrc('models/payment.model')]    = { id: fromSrc('models/paymen
 require.cache[fromSrc('models/booking.model')]    = { id: fromSrc('models/booking.model'),    filename: fromSrc('models/booking.model'),    loaded: true, exports: bookingModel };
 require.cache[fromSrc('services/mpesa.service')]  = { id: fromSrc('services/mpesa.service'),  filename: fromSrc('services/mpesa.service'),  loaded: true, exports: mpesaService };
 
-const paymentController = require('../src/controllers/payment.controller');
+const paymentController = require('../src/controllers/payments.controller');
 
 const makeRes = () => {
   const r = { _status: 200 };
@@ -88,7 +89,7 @@ describe('payment.controller – initiate', () => {
     bookingModel.findById        = async () => ({ ...acceptedBooking });
     paymentModel.findByBookingId = async () => null;
     paymentModel.create          = async () => ({});
-    mpesaImpl.initiateSTKPush = async () => ({ CheckoutRequestID: 'CHK-456' });
+    mpesaImpl.initiateStkPush = async () => ({ checkoutRequestId: 'CHK-456' });
     const res = makeRes();
     await paymentController.initiate({ body: { bookingId: 1, phone: '0712345678' }, user: { userId: 10 } }, res, (e) => { throw e; });
     assert.equal(res._status, 200);
@@ -120,7 +121,7 @@ describe('payment.controller – mpesaCallback', () => {
     let paidWith = null;
     let updatedBooking = null;
     paymentModel.markPaid    = async (args) => { paidWith = args; return { booking_id: 1, amount: 200 }; };
-    bookingModel.updateStatus = async (id) => { updatedBooking = id; };
+    bookingModel.markPaid    = async (id) => { updatedBooking = id; };
     const body = {
       Body: {
         stkCallback: {

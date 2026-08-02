@@ -8,6 +8,12 @@ vi.mock('../services/api.js', () => ({
   userFromApi: (u = {}) => ({ id: u.id || 1, name: u.name || 'Test User', ...u }),
 }));
 
+// Firebase Messaging requires Service Worker APIs not available in jsdom
+vi.mock('../lib/firebase.js', () => ({
+  requestNotificationPermission: vi.fn().mockResolvedValue(null),
+  onForegroundMessage: vi.fn(),
+}));
+
 import { api } from '../services/api.js';
 
 function Probe() {

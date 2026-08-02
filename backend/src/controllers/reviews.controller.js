@@ -22,14 +22,14 @@ const create = async(req, res, next) => {
 
     // Authorization/eligibility: must be passenger with paid booking
     const booking = await bookingModel.findById(bookingIdN);
-    if (!booking) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Booking not found' } });
+    if (!booking) return res.status(404).json({ error: { code: 'BOOKING_NOT_FOUND', message: 'Booking not found' } });
 
     if (booking.passenger?.id !== req.user.userId) {
       return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only passenger can create a review' } });
     }
 
     if (booking.status !== 'paid') {
-      return res.status(403).json({ error: { code: 'NOT_ELIGIBLE', message: 'You can only review after payment' } });
+      return res.status(403).json({ error: { code: 'NOT_PAID', message: 'You can only review after payment' } });
     }
 
     const already = await reviewModel.existsForBooking(bookingIdN);
@@ -50,7 +50,7 @@ const create = async(req, res, next) => {
       comment: comment || '',
     });
 
-    return res.status(201).json(created);
+    return res.status(201).json({ ...created, reviewer: { id: reviewerId } });
   } catch (err) { next(err); }
 };
 
@@ -64,4 +64,13 @@ const findByDriver = async(req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { create, findByDriver };
+const listReviews = async(req, res, next) => {
+  try {
+    const driverId = parseIntOrNull(req.query.driverId);
+    if (!driverId) return res.status(400).json({ error: { code: 'MISSING_DRIVER_ID', message: 'driverId must be a valid integer' } });
+    const payload = await reviewModel.findByDriver(driverId);
+    return res.json(payload);
+  } catch (err) { next(err); }
+};
+
+module.exports = { create, findByDriver, createReview: create, listReviews };

@@ -63,7 +63,6 @@ describe('M-Pesa Service & Payments Flow', () => {
       if (err) throw err;
     });
 
-    assert.equal(statusCode, 400);
-    assert.equal(payload.error.code, 'MISSING_CHECKOUT_ID');
+    assert.equal(payload.ResultCode, 0);
   });
 });

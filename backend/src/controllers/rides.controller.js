@@ -101,7 +101,7 @@ const findById = async(req, res, next) => {
       return res.status(400).json({ error: { code: 'INVALID_ID', message: 'Ride id must be an integer' } });
     }
     const ride = await rideModel.findById(id);
-    if (!ride) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ride not found' } });
+    if (!ride) return res.status(404).json({ error: { code: 'RIDE_NOT_FOUND', message: 'Ride not found' } });
     return res.json(ride);
   } catch (err) { next(err); }
 };
@@ -177,4 +177,4 @@ const remove = async(req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { findAll, findById, create, update, remove };
+module.exports = { findAll, findById, create, update, remove, listRides: findAll, getRide: findById, createRide: create, updateRide: update, deleteRide: remove };

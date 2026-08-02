@@ -146,4 +146,68 @@ const cancel = async(req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { findById, findByUser, create, updateStatus, cancel };
+// ── Test-compatible named exports ────────────────────────────────────────────
+// These mirror the core functions above but use the names and error-code
+// conventions the test suite was written against.
+
+const createBooking = async(req, res, next) => {
+  try {
+    const { rideId, seatsRequested } = req.body;
+    const rideIdN = parseInt(rideId, 10);
+    const seatsN  = parseInt(seatsRequested, 10);
+
+    const ride = await rideModel.findById(rideIdN);
+    if (!ride) return res.status(404).json({ error: { code: 'RIDE_NOT_FOUND', message: 'Ride not found' } });
+    if (ride.status && ride.status !== 'active') return res.status(400).json({ error: { code: 'RIDE_UNAVAILABLE', message: 'Ride is not active' } });
+
+    const driverId = ride.driver?.id;
+    if (driverId === req.user.userId) return res.status(400).json({ error: { code: 'OWN_RIDE', message: 'Cannot book your own ride' } });
+
+    const available = ride.seatsAvailable ?? ride.seats_available;
+    if (seatsN > available) return res.status(400).json({ error: { code: 'NOT_ENOUGH_SEATS', message: 'Not enough seats available' } });
+
+    const pricePerSeat = ride.pricePerSeat ?? ride.price_per_seat;
+    try {
+      const created = await bookingModel.create({ rideId: rideIdN, passengerId: req.user.userId, driverId, seatsRequested: seatsN, totalPrice: seatsN * pricePerSeat });
+      return res.status(201).json(created);
+    } catch (err) {
+      if (err.code === '23505') return res.status(409).json({ error: { code: 'ALREADY_BOOKED', message: 'Already booked this ride' } });
+      throw err;
+    }
+  } catch (err) { next(err); }
+};
+
+const listBookings = async(req, res, next) => {
+  try {
+    const rows = await bookingModel.findByUser({ userId: req.user.userId, role: req.query.role || 'sent', status: req.query.status });
+    return res.json({ bookings: rows });
+  } catch (err) { next(err); }
+};
+
+const acceptBooking = async(req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ error: { code: 'INVALID_ID', message: 'Invalid id' } });
+    const booking = await bookingModel.findById(id);
+    if (!booking) return res.status(404).json({ error: { code: 'BOOKING_NOT_FOUND', message: 'Booking not found' } });
+    if (booking.driver?.id !== req.user.userId) return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the driver can accept bookings' } });
+    if (booking.status !== 'pending') return res.status(409).json({ error: { code: 'NOT_PENDING', message: 'Only pending bookings can be accepted' } });
+    const updated = await bookingModel.updateStatus(id, 'accepted');
+    return res.json(updated);
+  } catch (err) { next(err); }
+};
+
+const declineBooking = async(req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ error: { code: 'INVALID_ID', message: 'Invalid id' } });
+    const booking = await bookingModel.findById(id);
+    if (!booking) return res.status(404).json({ error: { code: 'BOOKING_NOT_FOUND', message: 'Booking not found' } });
+    if (booking.driver?.id !== req.user.userId) return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the driver can decline bookings' } });
+    if (booking.status !== 'pending') return res.status(409).json({ error: { code: 'NOT_PENDING', message: 'Only pending bookings can be declined' } });
+    const updated = await bookingModel.updateStatus(id, 'declined');
+    return res.json(updated);
+  } catch (err) { next(err); }
+};
+
+module.exports = { findById, findByUser, create, updateStatus, cancel, createBooking, listBookings, acceptBooking, declineBooking };

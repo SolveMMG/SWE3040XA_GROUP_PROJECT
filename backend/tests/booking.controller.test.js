@@ -18,7 +18,7 @@ const fromSrc = (rel) => require.resolve(path.join(__dirname, '../src', rel));
 require.cache[fromSrc('models/booking.model')] = { id: fromSrc('models/booking.model'), filename: fromSrc('models/booking.model'), loaded: true, exports: bookingModel };
 require.cache[fromSrc('models/ride.model')]    = { id: fromSrc('models/ride.model'),    filename: fromSrc('models/ride.model'),    loaded: true, exports: rideModel };
 
-const bookingController = require('../src/controllers/booking.controller');
+const bookingController = require('../src/controllers/bookings.controller');
 
 const makeRes = () => {
   const r = { _status: 200 };
@@ -43,7 +43,7 @@ const baseBooking = {
   ride:      { id: 1, origin: 'A', destination: 'B' },
   passenger: { id: 10, name: 'Alice' },
   driver:    { id: 2,  name: 'Bob' },
-  seats_requested: 1, total_price: 100, status: 'pending', created_at: new Date(),
+  seats_requested: 1, seatsRequested: 1, total_price: 100, status: 'pending', created_at: new Date(),
 };
 
 // ─── createBooking ────────────────────────────────────────────────────────────

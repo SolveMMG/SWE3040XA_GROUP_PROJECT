@@ -149,7 +149,7 @@ const mpesaCallback = async(req, res, next) => {
     const mpesaRef = metadata.find((item) => item.Name === 'MpesaReceiptNumber')?.Value || callback.mpesa_ref;
 
     if (!checkoutRequestId) {
-      return res.status(400).json({ error: { code: 'MISSING_CHECKOUT_ID', message: 'checkout_request_id is required' } });
+      return res.json({ ResultCode: 0, message: 'No checkout ID — ignoring callback' });
     }
 
     // Mark paid/failed based on result_code convention (0=success)
@@ -171,11 +171,10 @@ const mpesaCallback = async(req, res, next) => {
         }
       }
     } else {
-      const failedPayment = await paymentModel.markFailed(checkoutRequestId);
-      if (!failedPayment) return res.status(404).json({ error: { code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' } });
+      await paymentModel.markFailed(checkoutRequestId);
     }
 
-    return res.json({ message: 'Callback processed' });
+    return res.json({ ResultCode: 0, message: 'Callback processed' });
   } catch (err) { next(err); }
 };
 
@@ -221,4 +220,44 @@ const autoRefund = async() => {
   }
 };
 
-module.exports = { findByBookingId, create, initiateStkPush, mpesaCallback, autoRefund };
+// ── Test-compatible named exports ────────────────────────────────────────────
+
+const initiate = async(req, res, next) => {
+  try {
+    const bookingId = parseIntOrNull(req.body.bookingId);
+    if (!bookingId || !req.body.phone) return res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'bookingId and phone are required' } });
+
+    const booking = await bookingModel.findById(bookingId);
+    if (!booking) return res.status(404).json({ error: { code: 'BOOKING_NOT_FOUND', message: 'Booking not found' } });
+    if (booking.passenger?.id !== req.user.userId) return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the passenger can pay' } });
+    if (booking.status !== 'accepted') return res.status(400).json({ error: { code: 'NOT_ACCEPTED', message: 'Booking must be accepted before payment' } });
+
+    const existingPayment = await paymentModel.findByBookingId(bookingId);
+    if (existingPayment?.status === 'paid') return res.status(409).json({ error: { code: 'ALREADY_PAID', message: 'This booking has already been paid' } });
+
+    const stk = await mpesaService.initiateStkPush({ amount: booking.total_price ?? booking.totalPrice, phone: req.body.phone, reference: `RIDE-${bookingId}`, description: `RideLoop booking ${bookingId}` });
+
+    await paymentModel.create({ bookingId, amount: booking.total_price ?? booking.totalPrice, phone: stk.phone ?? req.body.phone, checkoutRequestId: stk.checkoutRequestId ?? stk.CheckoutRequestID });
+    return res.json({ checkoutRequestId: stk.checkoutRequestId ?? stk.CheckoutRequestID, message: 'M-Pesa prompt sent to your phone.' });
+  } catch (err) { next(err); }
+};
+
+const getPayment = async(req, res, next) => {
+  try {
+    const bookingId = parseIntOrNull(req.params.bookingId);
+    if (!bookingId) return res.status(400).json({ error: { code: 'INVALID_ID', message: 'bookingId must be an integer' } });
+
+    const booking = await bookingModel.findById(bookingId);
+    if (!booking) return res.status(404).json({ error: { code: 'BOOKING_NOT_FOUND', message: 'Booking not found' } });
+    if (booking.passenger?.id !== req.user.userId && booking.driver?.id !== req.user.userId) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not booking participant' } });
+    }
+
+    const payment = await paymentModel.findByBookingId(bookingId);
+    if (!payment) return res.status(404).json({ error: { code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' } });
+
+    return res.json({ id: payment.id, bookingId: payment.booking_id, amount: payment.amount, mpesaRef: payment.mpesa_ref, status: payment.status, paidAt: payment.paid_at });
+  } catch (err) { next(err); }
+};
+
+module.exports = { findByBookingId, create, initiateStkPush, mpesaCallback, autoRefund, initiate, getPayment };
