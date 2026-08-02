@@ -141,7 +141,7 @@ const cancel = async(req, res, next) => {
       return res.status(409).json({ error: { code: 'CANNOT_CANCEL', message: 'Only pending or accepted bookings can be cancelled' } });
     }
 
-    const updated = await bookingModel.updateStatus(id, 'declined');
+    const updated = await bookingModel.updateStatus(id, 'cancelled');
     return res.json(updated);
   } catch (err) { next(err); }
 };

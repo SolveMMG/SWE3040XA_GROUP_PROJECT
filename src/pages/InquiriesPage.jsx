@@ -219,11 +219,12 @@ export default function InquiriesPage() {
   };
 
   const statusLabel = (s) => ({
-    pending:  'Waiting for driver',
-    accepted: 'Accepted — ready to pay',
-    declined: 'Declined',
-    paid:     'Paid & Complete',
-    refunded: 'Refunded',
+    pending:   'Waiting for driver',
+    accepted:  'Accepted — ready to pay',
+    declined:  'Declined by driver',
+    cancelled: 'Cancelled by you',
+    paid:      'Paid & Complete',
+    refunded:  'Refunded',
   }[s] || s);
 
   if (!isAuthenticated) {

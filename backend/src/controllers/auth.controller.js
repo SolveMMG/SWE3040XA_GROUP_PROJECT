@@ -81,7 +81,7 @@ const refresh = async(req, res, next) => {
       return res.status(401).json({ error: { code: 'USER_NOT_FOUND', message: 'User no longer exists' } });
     }
 
-    const newAccess  = tokenService.generateAccessToken(user.id, user.email);
+    const newAccess  = tokenService.generateAccessToken(user.id, user.email, user.role);
     const newRefresh = await tokenService.generateRefreshToken(user.id);
     return res.json({ token: newAccess, refreshToken: newRefresh });
   } catch (err) {

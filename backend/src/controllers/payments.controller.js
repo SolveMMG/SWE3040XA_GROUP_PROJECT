@@ -79,7 +79,7 @@ const initiateStkPush = async(req, res, next) => {
       return res.status(409).json({ error: { code: 'BOOKING_NOT_ACCEPTED', message: 'Booking must be accepted before payment' } });
     }
     const existingPayment = await paymentModel.findByBookingId(bookingId);
-    if (existingPayment && existingPayment.status !== 'refunded') {
+    if (existingPayment && existingPayment.status !== 'refunded' && existingPayment.status !== 'failed') {
       return res.status(409).json({ error: { code: 'PAYMENT_EXISTS', message: 'A payment has already been started for this booking' } });
     }
     const stk = await mpesaService.initiateStkPush({

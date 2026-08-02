@@ -19,6 +19,7 @@ export default function ProfilePage() {
 
   const [reviews, setReviews] = useState([]);
   const [message, setMessage] = useState('');
+  const [saveError, setSaveError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -33,10 +34,12 @@ export default function ProfilePage() {
     e.preventDefault();
     setSaving(true);
     setMessage('');
+    setSaveError(false);
     try {
       await updateUser(form);
       setMessage('Profile and vehicle details saved successfully.');
     } catch (err) {
+      setSaveError(true);
       setMessage(err.message || 'Failed to save profile.');
     } finally {
       setSaving(false);
@@ -164,7 +167,7 @@ export default function ProfilePage() {
             <Save size={18} /> {saving ? 'Saving...' : 'Save Profile & Vehicle Info'}
           </button>
 
-          {message && <div className="state-bar success">{message}</div>}
+          {message && <div className={`state-bar ${saveError ? 'danger' : 'success'}`}>{message}</div>}
         </form>
 
         <div className="reviews-column">

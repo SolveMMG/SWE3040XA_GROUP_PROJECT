@@ -70,7 +70,7 @@ export default function ListingDetailPage() {
 
   const effectivePrice = calculatedFare !== undefined && calculatedFare !== null ? calculatedFare : ride.price;
 
-  const isOwner = currentUser?.id === ride.seller.id;
+  const isOwner = currentUser?.id != null && currentUser.id === ride.seller?.id;
   const dist = distanceInMiles(effectivePickupCoords, effectiveDropoffCoords);
   const mapsUrl = buildMapsUrl(effectivePickup, effectiveDropoff);
 
