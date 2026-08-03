@@ -11,4 +11,4 @@ COPY seed.js ./
 
 EXPOSE 3000
 
-CMD ["node", "src/index.js"]
+CMD ["sh", "-c", "node migrations/migrate.js && node src/index.js"]

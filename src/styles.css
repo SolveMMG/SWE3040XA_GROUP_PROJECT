@@ -1742,6 +1742,9 @@ button {
 }
 
 .driver-route-subtitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 0.88rem;
   color: #475569;
   font-weight: 600;

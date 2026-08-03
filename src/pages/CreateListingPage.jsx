@@ -1,4 +1,4 @@
-import { ArrowRight, Calendar, Car, Clock, Compass, DollarSign, MapPin, Navigation, Plus, Route, Save, ShieldCheck, Sparkles, UsersRound, Zap } from 'lucide-react';
+import { ArrowRight, Calendar, Car, Clock, Compass, DollarSign, MapPin, Navigation, Plus, Route, Save, ShieldCheck, Sparkles, Trash2, UsersRound, Zap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import GooglePlacePicker from '../components/GooglePlacePicker.jsx';
@@ -101,7 +101,7 @@ export default function CreateListingPage({ mode = 'create' }) {
       }
       return updated;
     });
-  }, []);
+  }, [priceEdited]);
 
   const applyPreset = (preset) => {
     setPriceEdited(false);
@@ -286,8 +286,8 @@ export default function CreateListingPage({ mode = 'create' }) {
               <DollarSign size={18} />
               <input
                 type="number"
-                min="50"
-                step="50"
+                min="1"
+                step="any"
                 value={form.price}
                 onChange={(e) => { setPriceEdited(true); setField('price', e.target.value); }}
                 required

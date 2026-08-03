@@ -4,6 +4,7 @@ import { api, userFromApi } from '../services/api.js';
 
 const AuthContext = createContext(null);
 const tokenKey = 'rideloop_token';
+const refreshKey = 'rideloop_refresh';
 const userKey = 'rideloop_user';
 
 export function AuthProvider({ children }) {
@@ -12,9 +13,10 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem(userKey);
     return stored ? JSON.parse(stored) : null;
   });
-  const saveSession = ({ token: nextToken, user }) => {
+  const saveSession = ({ token: nextToken, refreshToken, user }) => {
     const nextUser = userFromApi(user);
     localStorage.setItem(tokenKey, nextToken);
+    if (refreshToken) localStorage.setItem(refreshKey, refreshToken);
     localStorage.setItem(userKey, JSON.stringify(nextUser));
     setToken(nextToken); setCurrentUser(nextUser);
     // Request notification permission and save FCM token in the background
@@ -34,7 +36,12 @@ export function AuthProvider({ children }) {
     } catch (err) { return { ok: false, message: err.message }; }
   };
   const logout = async () => {
-    localStorage.removeItem(tokenKey); localStorage.removeItem(userKey); setToken(null); setCurrentUser(null);
+    const storedRefresh = localStorage.getItem(refreshKey);
+    if (storedRefresh) {
+      api('/auth/logout', { token, method: 'POST', body: JSON.stringify({ refreshToken: storedRefresh }) }).catch(() => {});
+    }
+    localStorage.removeItem(tokenKey); localStorage.removeItem(refreshKey); localStorage.removeItem(userKey);
+    setToken(null); setCurrentUser(null);
   };
   const updateUser = async (updates) => {
     const user = userFromApi(await api('/users/me', { token, method: 'PUT', body: JSON.stringify(updates) }));

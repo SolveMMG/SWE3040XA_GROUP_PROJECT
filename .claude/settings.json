@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git -C /home/mikemur/Documents/GROUP_PROJECT status)",
-      "Bash(git -C /home/mikemur/Documents/GROUP_PROJECT log --oneline origin/main..HEAD)"
+      "Bash(git -C /home/mikemur/Documents/GROUP_PROJECT log --oneline origin/main..HEAD)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('scripts:', json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\); print\\('deps:', list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\")"
     ]
   }
 }

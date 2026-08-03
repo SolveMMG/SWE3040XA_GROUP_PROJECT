@@ -11,10 +11,11 @@ const rideModel = {
   isOwner:  async () => false,
 };
 
-const fromSrc = (rel) => require.resolve(path.join(__dirname, '../src', rel));
-require.cache[fromSrc('models/ride.model')] = { id: fromSrc('models/ride.model'), filename: fromSrc('models/ride.model'), loaded: true, exports: rideModel };
 
-const rideController = require('../src/controllers/ride.controller');
+const fromSrc = (rel) => require.resolve(path.join(__dirname, '../src', rel));
+require.cache[fromSrc('models/ride.model')]  = { id: fromSrc('models/ride.model'),  filename: fromSrc('models/ride.model'),  loaded: true, exports: rideModel };
+
+const rideController = require('../src/controllers/rides.controller');
 
 const makeRes = () => {
   const r = { _status: 200 };
@@ -26,7 +27,9 @@ const makeRes = () => {
 // Raw DB-shaped ride (snake_case — as rideModel returns)
 const dbRide = {
   id: 1, origin: 'Nairobi', destination: 'Mombasa',
-  departure_time: new Date(), seats_available: 3, price_per_seat: 500,
+  departure_time: new Date(), departureTime: new Date(),
+  seats_available: 3,        seatsAvailable: 3,
+  price_per_seat: 500,       pricePerSeat: 500,
   status: 'active', created_at: new Date(),
   driver: { id: 2, name: 'Bob Driver', photoUrl: null, avgRating: 4.8, rideCount: 10 },
 };
@@ -56,7 +59,8 @@ describe('ride.controller – createRide', () => {
     rideModel.create = async () => ({ ...dbRide });
     const res = makeRes();
     await rideController.createRide({
-      body: { origin: 'Nairobi', destination: 'Mombasa', departureTime: '2026-08-01T08:00:00Z', seatsAvailable: 3, pricePerSeat: 500 },
+      body: { origin: 'Nairobi', destination: 'Mombasa', departureTime: '2026-08-01T08:00:00Z', seatsAvailable: 3, pricePerSeat: 500,
+              originLatitude: -1.2921, originLongitude: 36.8219, destinationLatitude: -4.0435, destinationLongitude: 39.6682 },
       user: { userId: 2 },
     }, res, (e) => { throw e; });
     assert.equal(res._status, 201);

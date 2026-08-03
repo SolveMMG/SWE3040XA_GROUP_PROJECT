@@ -46,7 +46,7 @@ const googleCallback = async(req, res, next) => {
   try {
     const { id, name, email, photo_url, isNewUser } = req.user;
 
-const accessToken = tokenService.generateAccessToken(id, email, req.user.role);
+    const accessToken = tokenService.generateAccessToken(id, email, req.user.role);
     const refreshToken = await tokenService.generateRefreshToken(id);
 
     // Prune any expired tokens on each login — fire-and-forget, non-blocking
@@ -81,7 +81,7 @@ const refresh = async(req, res, next) => {
       return res.status(401).json({ error: { code: 'USER_NOT_FOUND', message: 'User no longer exists' } });
     }
 
-    const newAccess  = tokenService.generateAccessToken(user.id, user.email);
+    const newAccess  = tokenService.generateAccessToken(user.id, user.email, user.role);
     const newRefresh = await tokenService.generateRefreshToken(user.id);
     return res.json({ token: newAccess, refreshToken: newRefresh });
   } catch (err) {

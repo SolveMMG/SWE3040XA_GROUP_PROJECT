@@ -23,7 +23,7 @@ export async function api(path, { token, ...options } = {}) {
 
 export const userFromApi = (user = {}) => ({
   ...user,
-  id:           user?.id || 1,
+  id:           user?.id ?? null,
   name:         user?.name || 'Kenyan Driver',
   photoUrl:     user?.photoUrl     ?? user?.photo_url     ?? '',
   rating:       user?.avgRating    ?? user?.avg_rating    ?? '4.9',

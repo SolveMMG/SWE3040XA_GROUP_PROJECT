@@ -1,5 +1,4 @@
 const rideModel = require('../models/ride.model');
-const userModel = require('../models/user.model');
 
 const ensureFields = (body, fields) => {
   for (const f of fields) {
@@ -101,17 +100,13 @@ const findById = async(req, res, next) => {
       return res.status(400).json({ error: { code: 'INVALID_ID', message: 'Ride id must be an integer' } });
     }
     const ride = await rideModel.findById(id);
-    if (!ride) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ride not found' } });
+    if (!ride) return res.status(404).json({ error: { code: 'RIDE_NOT_FOUND', message: 'Ride not found' } });
     return res.json(ride);
   } catch (err) { next(err); }
 };
 
 const create = async(req, res, next) => {
   try {
-    const driver = await userModel.findById(req.user.userId);
-    if (!driver?.is_approved) {
-      return res.status(403).json({ error: { code: 'DRIVER_NOT_APPROVED', message: 'Your driver account must be approved before publishing rides' } });
-    }
     const { origin, destination, departureTime, seatsAvailable, pricePerSeat } = req.body;
     const check = ensureFields(req.body, ['origin', 'destination', 'departureTime', 'seatsAvailable', 'pricePerSeat']);
     if (!check.ok) return res.status(400).json({ error: { code: 'MISSING_FIELD', message: check.message } });
@@ -177,4 +172,4 @@ const remove = async(req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { findAll, findById, create, update, remove };
+module.exports = { findAll, findById, create, update, remove, listRides: findAll, getRide: findById, createRide: create, updateRide: update, deleteRide: remove };

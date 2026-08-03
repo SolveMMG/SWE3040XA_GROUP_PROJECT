@@ -16,7 +16,7 @@ const fromSrc = (rel) => require.resolve(path.join(__dirname, '../src', rel));
 require.cache[fromSrc('models/review.model')]  = { id: fromSrc('models/review.model'),  filename: fromSrc('models/review.model'),  loaded: true, exports: reviewModel };
 require.cache[fromSrc('models/booking.model')] = { id: fromSrc('models/booking.model'), filename: fromSrc('models/booking.model'), loaded: true, exports: bookingModel };
 
-const reviewController = require('../src/controllers/review.controller');
+const reviewController = require('../src/controllers/reviews.controller');
 
 const makeRes = () => {
   const r = { _status: 200 };
