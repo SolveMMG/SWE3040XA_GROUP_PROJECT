@@ -10,23 +10,25 @@ const app = express();
 
 // Security & utility middleware
 app.use(helmet());
-app.use(cors({
-  origin: [process.env.FRONTEND_URL, 'http://localhost:8080', 'http://localhost:5173'].filter(Boolean),
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [process.env.FRONTEND_URL, 'http://localhost:8080', 'http://localhost:5173'].filter(Boolean),
+    credentials: true,
+  })
+);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // API routes
-app.use('/api/v1/auth',     require('./routes/auth'));
-app.use('/api/v1/users',    require('./routes/users'));
-app.use('/api/v1/rides',    require('./routes/rides'));
+app.use('/api/v1/auth', require('./routes/auth'));
+app.use('/api/v1/users', require('./routes/users'));
+app.use('/api/v1/rides', require('./routes/rides'));
 app.use('/api/v1/bookings', require('./routes/bookings'));
 app.use('/api/v1/payments', require('./routes/payments'));
-app.use('/api/v1/reviews',  require('./routes/reviews'));
-app.use('/api/v1/sites',    require('./routes/sites'));
-app.use('/api/v1/admin',    require('./routes/admin'));
+app.use('/api/v1/reviews', require('./routes/reviews'));
+app.use('/api/v1/sites', require('./routes/sites'));
+app.use('/api/v1/admin', require('./routes/admin'));
 
 // Compatibility endpoint for externally configured Daraja/ngrok callbacks.
 app.post('/api/mpesa/callback', require('./controllers/payments.controller').mpesaCallback);
