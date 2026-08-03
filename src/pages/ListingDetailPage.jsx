@@ -1,5 +1,5 @@
 import { ArrowLeft, CalendarClock, ExternalLink, MapPin, MessageCircle, Navigation, Route, UsersRound, WalletCards, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import GoogleRouteMap from '../components/GoogleRouteMap.jsx';
 import { api, rideFromApi } from '../services/api.js';
@@ -11,7 +11,6 @@ export default function ListingDetailPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, token } = useAuth();
-  const isMountedRef = useRef(true);
 
   const customPickup = state?.customPickup;
   const customDropoff = state?.customDropoff;
@@ -50,19 +49,11 @@ export default function ListingDetailPage() {
   const [paying, setPaying]             = useState(false);
   const [polling, setPolling]           = useState(false);
 
-  // Track component mounted state for safe async updates
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
   useEffect(() => {
     if (!rideId) return;
     api(`/rides/${rideId}`)
       .then((data) => {
-        if (data && isMountedRef.current) {
+        if (data) {
           const parsed = rideFromApi(data);
           if (parsed) setRide(parsed);
         }
@@ -94,14 +85,15 @@ export default function ListingDetailPage() {
   const mapsUrl = buildMapsUrl(effectivePickup, effectiveDropoff);
 
   const pollPaymentStatus = async (bookingId) => {
+    let isMounted = true;
     setPolling(true);
     setMessage('Waiting for M-Pesa confirmation on your phone…');
+
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 3000));
-      if (!isMountedRef.current) return;
       try {
         const res = await api(`/payments/booking/${bookingId}`, { token });
-        if (!isMountedRef.current) return;
+        if (!isMounted) return;
 
         if (res.status === 'paid') {
           setPolling(false);
@@ -123,7 +115,8 @@ export default function ListingDetailPage() {
         }
       } catch { /* keep polling */ }
     }
-    if (isMountedRef.current) {
+
+    if (isMounted) {
       setPolling(false);
       setMessage('Payment not confirmed yet — check My Inquiries for your ride status.');
       setRequestSent(true);
@@ -139,15 +132,12 @@ export default function ListingDetailPage() {
         method: 'POST',
         body: { rideId: Number(rideId), seatsRequested: 1, totalPrice: effectivePrice },
       });
-      if (!isMountedRef.current) return;
       setPendingBookingId(created.id);
       setShowPayForm(true);
     } catch (err) {
-      if (isMountedRef.current) {
-        setMessage(err.message?.toLowerCase().includes('unauthorized')
-          ? 'Session expired — please sign in again.'
-          : (err.message || 'Booking failed. Please try again.'));
-      }
+      setMessage(err.message?.toLowerCase().includes('unauthorized')
+        ? 'Session expired — please sign in again.'
+        : (err.message || 'Booking failed. Please try again.'));
     }
   };
 
@@ -163,8 +153,6 @@ export default function ListingDetailPage() {
         method: 'POST',
         body: { bookingId: pendingBookingId, phone },
       });
-      if (!isMountedRef.current) return;
-
       if (payRes.status === 'paid') {
         setDispatchInfo({
           driverName: ride.seller?.name || 'Driver',
@@ -179,14 +167,10 @@ export default function ListingDetailPage() {
         await pollPaymentStatus(pendingBookingId);
       }
     } catch (err) {
-      if (isMountedRef.current) {
-        setMessage(err.message || 'Payment failed. Please try again.');
-        setShowPayForm(true);
-      }
+      setMessage(err.message || 'Payment failed. Please try again.');
+      setShowPayForm(true);
     } finally {
-      if (isMountedRef.current) {
-        setPaying(false);
-      }
+      setPaying(false);
     }
   };
 
