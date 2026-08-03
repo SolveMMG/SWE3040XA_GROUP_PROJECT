@@ -1,10 +1,9 @@
-import { ImageIcon, MapPinned, Plus, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { ImageIcon, MapPinned, Plus, Search, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import GooglePlacePicker from '../components/GooglePlacePicker.jsx';
 import SitesMap from '../components/SitesMap.jsx';
 import { api } from '../services/api.js';
 import { useAuth } from '../state/AuthContext.jsx';
-
 
 const PLACEHOLDER_IMAGES = {
   'Roysambu': 'https://images.unsplash.com/photo-1569336415962-a4bd9f609cd1?w=200&h=150&fit=crop',
@@ -42,14 +41,17 @@ export default function SitesPage() {
   const [sites, setSites] = useState([]);
   const [form, setForm] = useState(emptySite);
   const [message, setMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const load = () => {
+  const load = useCallback(() => {
     api('/sites')
       .then((data) => setSites(data.sites || []))
       .catch((err) => setMessage(err.message));
-  };
+  }, []);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const updatePlace = useCallback((location) => {
     setForm((current) => ({
@@ -61,6 +63,13 @@ export default function SitesPage() {
 
   const submit = async (e) => {
     e.preventDefault();
+    setMessage('');
+
+    if (!form.lat || !form.lng) {
+      setMessage('Please select a location from the map or picker.');
+      return;
+    }
+
     try {
       await api('/sites', {
         token,
@@ -89,6 +98,16 @@ export default function SitesPage() {
     }
   };
 
+  const filteredSites = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return sites;
+    return sites.filter(
+      (site) =>
+        site.name?.toLowerCase().includes(query) ||
+        site.address?.toLowerCase().includes(query)
+    );
+  }, [sites, searchQuery]);
+
   return (
     <section className="page form-page sites-page">
       <div className="section-heading">
@@ -100,7 +119,7 @@ export default function SitesPage() {
 
       {sites.length > 0 && (
         <div className="sites-map-wrapper glass">
-          <SitesMap sites={sites} />
+          <SitesMap sites={filteredSites} />
         </div>
       )}
 
@@ -131,15 +150,36 @@ export default function SitesPage() {
         </form>
 
         <div className="site-list glass">
-          <h2>Your Saved Locations ({sites.length})</h2>
+          <div className="site-list-header">
+            <h2>Your Saved Locations ({filteredSites.length})</h2>
+            {sites.length > 0 && (
+              <div className="search-input-wrapper">
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder="Filter sites..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+            )}
+          </div>
+
           {sites.length === 0 ? (
             <div className="empty-state">
               <MapPinned size={28} />
               <h2>No pickup sites available yet.</h2>
               <p>Add your frequent pickup or dropoff spots for easy 1-click selection.</p>
             </div>
+          ) : filteredSites.length === 0 ? (
+            <div className="empty-state">
+              <Search size={28} />
+              <h2>No matching sites found.</h2>
+              <p>Try searching for a different name or address.</p>
+            </div>
           ) : (
-            sites.map((site) => (
+            filteredSites.map((site) => (
               <article className="site-card" key={site.id}>
                 <div className="site-card-image-wrapper">
                   <img
