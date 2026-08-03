@@ -1,4 +1,4 @@
-import { ImageIcon, MapPinned, Plus, Search, Trash2 } from 'lucide-react';
+import { ExternalLink, ImageIcon, MapPinned, Plus, Search, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import GooglePlacePicker from '../components/GooglePlacePicker.jsx';
 import SitesMap from '../components/SitesMap.jsx';
@@ -89,12 +89,20 @@ export default function SitesPage() {
     }
   };
 
+  // Optimistic UI Deletion
   const remove = async (id) => {
+    setMessage('');
+    const previousSites = sites;
+
+    // Immediately remove from UI
+    setSites((current) => current.filter((s) => s.id !== id));
+
     try {
       await api(`/sites/${id}`, { token, method: 'DELETE' });
-      load();
     } catch (err) {
-      setMessage(err.message);
+      // Rollback UI state if server request fails
+      setSites(previousSites);
+      setMessage(err.message || 'Failed to delete location.');
     }
   };
 
@@ -196,14 +204,26 @@ export default function SitesPage() {
                     {site.latitude}, {site.longitude}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="icon-button danger"
-                  onClick={() => remove(site.id)}
-                  aria-label="Delete site"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div className="site-card-actions">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${site.latitude},${site.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="icon-button"
+                    title="Open in Google Maps"
+                    aria-label="Open in Google Maps"
+                  >
+                    <ExternalLink size={18} />
+                  </a>
+                  <button
+                    type="button"
+                    className="icon-button danger"
+                    onClick={() => remove(site.id)}
+                    aria-label="Delete site"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </article>
             ))
           )}
