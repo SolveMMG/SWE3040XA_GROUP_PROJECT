@@ -5,12 +5,14 @@ import { useAuth } from '../state/AuthContext.jsx';
 
 export default function Layout() {
   const { currentUser, isAuthenticated, logout } = useAuth();
+
   const initials = currentUser?.name
-    ?.split(' ')
+    ?.trim()
+    .split(/\s+/)
     .map((part) => part[0])
     .join('')
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || 'U';
 
   return (
     <div className="app-shell">
@@ -41,7 +43,10 @@ export default function Layout() {
                 </NavLink>
               )}
               {currentUser?.role === 'superadmin' && (
-                <NavLink to="/admin"><ShieldCheck size={18} />Admin</NavLink>
+                <NavLink to="/admin">
+                  <ShieldCheck size={18} />
+                  Admin
+                </NavLink>
               )}
               <NavLink to="/inquiries">
                 <ClipboardList size={18} />
@@ -67,7 +72,7 @@ export default function Layout() {
                 </span>
               )}
               {currentUser?.photoUrl ? (
-                <img src={currentUser.photoUrl} alt="" className="avatar" />
+                <img src={currentUser.photoUrl} alt={currentUser?.name || 'User avatar'} className="avatar" />
               ) : (
                 <span className="avatar initials" aria-label={currentUser?.name || 'User'}>
                   {initials}
