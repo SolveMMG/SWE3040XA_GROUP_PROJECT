@@ -1,5 +1,5 @@
 import { ArrowLeft, CalendarClock, ExternalLink, MapPin, MessageCircle, Navigation, Route, UsersRound, WalletCards, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import GoogleRouteMap from '../components/GoogleRouteMap.jsx';
 import { api, rideFromApi } from '../services/api.js';
@@ -11,6 +11,7 @@ export default function ListingDetailPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, token } = useAuth();
+  const isMountedRef = useRef(true);
 
   const customPickup = state?.customPickup;
   const customDropoff = state?.customDropoff;
@@ -18,32 +19,50 @@ export default function ListingDetailPage() {
   const pickupDistanceKm = state?.pickupDistanceKm;
   const tripDistanceKm = state?.tripDistanceKm;
 
-   const [ride, setRide] = useState(() => ({
-     id: String(rideId || '1'),
-     pickup: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)',
-     dropoff: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)',
-     price: calculatedFare || 50,
-     seats: 3,
-     dateTime: new Date(),
-     pickupLocation: { address: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)', placeId: '', lat: customPickup?.lat || -1.2180, lng: customPickup?.lng || 36.8870 },
-     dropoffLocation: { address: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)', placeId: '', lat: customDropoff?.lat || -1.2885, lng: customDropoff?.lng || 36.8232 },
-     seller: { id: 1, name: 'Samuel Njuguna (Kenyan Driver)', rating: '4.9', rideCount: 15 },
-   }));
+  const [ride, setRide] = useState(() => ({
+    id: String(rideId || '1'),
+    pickup: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)',
+    dropoff: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)',
+    price: calculatedFare || 50,
+    seats: 3,
+    dateTime: new Date(),
+    pickupLocation: {
+      address: customPickup?.name || customPickup?.address || 'Roysambu (TRM Mall)',
+      placeId: '',
+      lat: customPickup?.lat || -1.2180,
+      lng: customPickup?.lng || 36.8870,
+    },
+    dropoffLocation: {
+      address: customDropoff?.name || customDropoff?.address || 'Nairobi CBD (KICC)',
+      placeId: '',
+      lat: customDropoff?.lat || -1.2885,
+      lng: customDropoff?.lng || 36.8232,
+    },
+    seller: { id: 1, name: 'Samuel Njuguna (Kenyan Driver)', rating: '4.9', rideCount: 15 },
+  }));
 
-   const [message, setMessage]           = useState('');
-   const [requestSent, setRequestSent]   = useState(false);
-   const [dispatchInfo, setDispatchInfo] = useState(null);
-   const [phoneInput, setPhoneInput]     = useState('');
-   const [showPayForm, setShowPayForm]   = useState(false);
-   const [pendingBookingId, setPendingBookingId] = useState(null);
-   const [paying, setPaying]             = useState(false);
-   const [polling, setPolling]           = useState(false);
+  const [message, setMessage]           = useState('');
+  const [requestSent, setRequestSent]   = useState(false);
+  const [dispatchInfo, setDispatchInfo] = useState(null);
+  const [phoneInput, setPhoneInput]     = useState('');
+  const [showPayForm, setShowPayForm]   = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState(null);
+  const [paying, setPaying]             = useState(false);
+  const [polling, setPolling]           = useState(false);
 
-   useEffect(() => {
+  // Track component mounted state for safe async updates
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!rideId) return;
     api(`/rides/${rideId}`)
       .then((data) => {
-        if (data) {
+        if (data && isMountedRef.current) {
           const parsed = rideFromApi(data);
           if (parsed) setRide(parsed);
         }
@@ -74,14 +93,16 @@ export default function ListingDetailPage() {
   const dist = distanceInMiles(effectivePickupCoords, effectiveDropoffCoords);
   const mapsUrl = buildMapsUrl(effectivePickup, effectiveDropoff);
 
-
   const pollPaymentStatus = async (bookingId) => {
     setPolling(true);
     setMessage('Waiting for M-Pesa confirmation on your phone…');
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 3000));
+      if (!isMountedRef.current) return;
       try {
         const res = await api(`/payments/booking/${bookingId}`, { token });
+        if (!isMountedRef.current) return;
+
         if (res.status === 'paid') {
           setPolling(false);
           setDispatchInfo({
@@ -102,9 +123,11 @@ export default function ListingDetailPage() {
         }
       } catch { /* keep polling */ }
     }
-    setPolling(false);
-    setMessage('Payment not confirmed yet — check My Inquiries for your ride status.');
-    setRequestSent(true);
+    if (isMountedRef.current) {
+      setPolling(false);
+      setMessage('Payment not confirmed yet — check My Inquiries for your ride status.');
+      setRequestSent(true);
+    }
   };
 
   const book = async () => {
@@ -114,14 +137,17 @@ export default function ListingDetailPage() {
       const created = await api('/bookings', {
         token,
         method: 'POST',
-        body: JSON.stringify({ rideId: Number(rideId), seatsRequested: 1, totalPrice: effectivePrice }),
+        body: { rideId: Number(rideId), seatsRequested: 1, totalPrice: effectivePrice },
       });
+      if (!isMountedRef.current) return;
       setPendingBookingId(created.id);
       setShowPayForm(true);
     } catch (err) {
-      setMessage(err.message?.toLowerCase().includes('unauthorized')
-        ? 'Session expired — please sign in again.'
-        : (err.message || 'Booking failed. Please try again.'));
+      if (isMountedRef.current) {
+        setMessage(err.message?.toLowerCase().includes('unauthorized')
+          ? 'Session expired — please sign in again.'
+          : (err.message || 'Booking failed. Please try again.'));
+      }
     }
   };
 
@@ -135,8 +161,10 @@ export default function ListingDetailPage() {
       const payRes = await api('/payments/mpesa/stk-push', {
         token,
         method: 'POST',
-        body: JSON.stringify({ bookingId: pendingBookingId, phone }),
+        body: { bookingId: pendingBookingId, phone },
       });
+      if (!isMountedRef.current) return;
+
       if (payRes.status === 'paid') {
         setDispatchInfo({
           driverName: ride.seller?.name || 'Driver',
@@ -151,10 +179,14 @@ export default function ListingDetailPage() {
         await pollPaymentStatus(pendingBookingId);
       }
     } catch (err) {
-      setMessage(err.message || 'Payment failed. Please try again.');
-      setShowPayForm(true);
+      if (isMountedRef.current) {
+        setMessage(err.message || 'Payment failed. Please try again.');
+        setShowPayForm(true);
+      }
     } finally {
-      setPaying(false);
+      if (isMountedRef.current) {
+        setPaying(false);
+      }
     }
   };
 
