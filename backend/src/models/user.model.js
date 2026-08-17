@@ -46,24 +46,25 @@ const create = async({ name, email, photoUrl, passwordHash, isApproved = true })
 
 const findAuthByEmail = async(email) => {
   const { rows } = await db.query(
-    'SELECT id, name, email, password_hash, role FROM users WHERE email = $1',
+    'SELECT id, name, email, password_hash, role, is_suspended FROM users WHERE email = $1',
     [email],
   );
   return rows[0] || null;
 };
 
-const update = async(id, { name, bio, role, photoUrl, vehicleModel, licensePlate, mpesaPhone }) => {
+const update = async(id, { name, bio, role, photoUrl, vehicleModel, licensePlate, licenseNumber, mpesaPhone }) => {
   const fields = [];
   const values = [];
   let idx = 1;
 
-  if (name         !== undefined) { fields.push(`name = $${idx++}`);            values.push(name); }
-  if (bio          !== undefined) { fields.push(`bio = $${idx++}`);             values.push(bio); }
-  if (role         !== undefined) { fields.push(`role = $${idx++}::user_role`); values.push(role); }
-  if (photoUrl     !== undefined) { fields.push(`photo_url = $${idx++}`);       values.push(photoUrl); }
-  if (vehicleModel !== undefined) { fields.push(`vehicle_model = $${idx++}`);   values.push(vehicleModel); }
-  if (licensePlate !== undefined) { fields.push(`license_plate = $${idx++}`);   values.push(licensePlate); }
-  if (mpesaPhone   !== undefined) { fields.push(`mpesa_phone = $${idx++}`);     values.push(mpesaPhone); }
+  if (name          !== undefined) { fields.push(`name = $${idx++}`);            values.push(name); }
+  if (bio           !== undefined) { fields.push(`bio = $${idx++}`);             values.push(bio); }
+  if (role          !== undefined) { fields.push(`role = $${idx++}::user_role`); values.push(role); }
+  if (photoUrl      !== undefined) { fields.push(`photo_url = $${idx++}`);       values.push(photoUrl); }
+  if (vehicleModel  !== undefined) { fields.push(`vehicle_model = $${idx++}`);   values.push(vehicleModel); }
+  if (licensePlate  !== undefined) { fields.push(`license_plate = $${idx++}`);   values.push(licensePlate); }
+  if (licenseNumber !== undefined) { fields.push(`license_number = $${idx++}`);  values.push(licenseNumber); }
+  if (mpesaPhone    !== undefined) { fields.push(`mpesa_phone = $${idx++}`);     values.push(mpesaPhone); }
 
   if (fields.length === 0) return findById(id);
 

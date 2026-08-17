@@ -198,6 +198,23 @@ export default function CreateListingPage({ mode = 'create' }) {
     : null;
   const distanceKm = rawKm !== null && !Number.isNaN(rawKm) ? Number(rawKm).toFixed(1) : null;
 
+  if (currentUser?.isApproved === false) {
+    return (
+      <section className="page form-page create-ride-page">
+        <div className="section-heading-row">
+          <div>
+            <span className="eyebrow"><Car size={14} /> Driver Ride Publisher</span>
+            <h1>Account Pending Approval</h1>
+          </div>
+        </div>
+        <div className="state-bar danger" style={{ fontSize: 15, padding: '18px 20px', borderRadius: 10 }}>
+          <strong>Your driver account is awaiting admin approval.</strong><br />
+          You will be able to publish rides once an admin has reviewed and approved your account. This usually happens within 24 hours.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="page form-page create-ride-page">
       <div className="section-heading-row">

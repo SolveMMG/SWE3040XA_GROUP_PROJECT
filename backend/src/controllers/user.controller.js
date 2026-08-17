@@ -41,7 +41,7 @@ const getMe = async(req, res, next) => {
 // PUT /users/me
 const updateMe = async(req, res, next) => {
   try {
-    const { name, bio, role, photoUrl, vehicleModel, licensePlate, mpesaPhone } = req.body;
+    const { name, bio, role, photoUrl, vehicleModel, licensePlate, licenseNumber, mpesaPhone } = req.body;
 
     if (name         !== undefined && (typeof name !== 'string' || !name.trim())) {
       return res.status(400).json({ error: { code: 'INVALID_NAME', message: 'name must be a non-empty string' } });
@@ -58,14 +58,17 @@ const updateMe = async(req, res, next) => {
     if (vehicleModel !== undefined && typeof vehicleModel !== 'string') {
       return res.status(400).json({ error: { code: 'INVALID_VEHICLE_MODEL', message: 'vehicleModel must be a string' } });
     }
-    if (licensePlate !== undefined && typeof licensePlate !== 'string') {
+    if (licensePlate   !== undefined && typeof licensePlate !== 'string') {
       return res.status(400).json({ error: { code: 'INVALID_LICENSE_PLATE', message: 'licensePlate must be a string' } });
     }
-    if (mpesaPhone   !== undefined && typeof mpesaPhone !== 'string') {
+    if (licenseNumber  !== undefined && typeof licenseNumber !== 'string') {
+      return res.status(400).json({ error: { code: 'INVALID_LICENSE_NUMBER', message: 'licenseNumber must be a string' } });
+    }
+    if (mpesaPhone     !== undefined && typeof mpesaPhone !== 'string') {
       return res.status(400).json({ error: { code: 'INVALID_MPESA_PHONE', message: 'mpesaPhone must be a string' } });
     }
 
-    const updated = await userModel.update(req.user.userId, { name, bio, role, photoUrl, vehicleModel, licensePlate, mpesaPhone });
+    const updated = await userModel.update(req.user.userId, { name, bio, role, photoUrl, vehicleModel, licensePlate, licenseNumber, mpesaPhone });
     if (!updated) return res.status(404).json({ error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
     return res.json(serializePrivate(updated));
   } catch (err) { next(err); }

@@ -24,6 +24,7 @@ const PLACEHOLDER_IMAGES = {
   'default': 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=200&h=150&fit=crop'
 };
 
+
 const getSiteImage = (site) => {
   const name = (site.name || '').toLowerCase();
   const address = (site.address || '').toLowerCase();

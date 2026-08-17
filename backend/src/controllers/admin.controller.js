@@ -20,4 +20,52 @@ const approveDriver = async(req, res, next) => {
 const getStatistics = async(_req, res, next) => {
   try { return res.json(await adminModel.statistics(feePercent())); } catch (err) { return next(err); }
 };
-module.exports = { pendingDrivers, approveDriver, getStatistics };
+const getUsers = async(req, res, next) => {
+  try {
+    const users = await adminModel.listUsers(req.query.search || '');
+    return res.json({ users });
+  } catch (err) { return next(err); }
+};
+
+const suspendUser = async(req, res, next) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ error: { code: 'INVALID_ID', message: 'User id must be an integer' } });
+    const suspend = req.body.suspend !== false;
+    const user = await adminModel.suspendUser(id, suspend);
+    if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    return res.json({ user });
+  } catch (err) { return next(err); }
+};
+
+const getRides = async(req, res, next) => {
+  try {
+    const rides = await adminModel.listRides(req.query.search || '');
+    return res.json({ rides });
+  } catch (err) { return next(err); }
+};
+
+const removeRide = async(req, res, next) => {
+  try {
+    const id = Number.parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ error: { code: 'INVALID_ID', message: 'Ride id must be an integer' } });
+    const deleted = await adminModel.deleteRide(id);
+    if (!deleted) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Ride not found' } });
+    return res.json({ deleted: true, id: deleted.id });
+  } catch (err) { return next(err); }
+};
+
+const getBookings = async(req, res, next) => {
+  try {
+    const bookings = await adminModel.listBookings();
+    return res.json({ bookings });
+  } catch (err) { return next(err); }
+};
+
+const getAnalytics = async(req, res, next) => {
+  try {
+    return res.json(await adminModel.analytics());
+  } catch (err) { return next(err); }
+};
+
+module.exports = { pendingDrivers, approveDriver, getStatistics, getUsers, suspendUser, getRides, removeRide, getBookings, getAnalytics };

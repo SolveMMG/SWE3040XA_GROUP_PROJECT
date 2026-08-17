@@ -213,6 +213,12 @@ export default function DashboardPage() {
         </button>
       </div>
 
+      {isDriver && currentUser?.isApproved === false && (
+        <div className="state-bar danger" style={{ marginBottom: 20, fontSize: 14, padding: '14px 18px', borderRadius: 10 }}>
+          <strong>Your driver account is pending admin approval.</strong> You cannot publish rides until an admin approves you. Check back soon.
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="dashboard-grid">
         <StatCard

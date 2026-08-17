@@ -1,4 +1,5 @@
-const rideModel = require('../models/ride.model');
+const rideModel  = require('../models/ride.model');
+const userModel  = require('../models/user.model');
 
 const ensureFields = (body, fields) => {
   for (const f of fields) {
@@ -117,6 +118,11 @@ const create = async(req, res, next) => {
     }
 
     const driverId = req.user.userId;
+    const driver = await userModel.findById(driverId);
+    if (!driver?.is_approved) {
+      return res.status(403).json({ error: { code: 'DRIVER_NOT_APPROVED', message: 'Your driver account is pending admin approval. You will be notified once approved.' } });
+    }
+
     const created = await rideModel.create({
       origin,
       destination,

@@ -20,6 +20,7 @@ export default function LoginPage() {
     licensePlate: '',
     seats: 3,
     driverLicense: '',
+    mpesaPhone: '',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -207,6 +208,16 @@ export default function LoginPage() {
                     <input
                       value={credentials.driverLicense}
                       onChange={(event) => updateField('driverLicense', event.target.value)}
+                      required
+                    />
+                  </label>
+                  <label>
+                    M-Pesa phone number
+                    <input
+                      type="tel"
+                      value={credentials.mpesaPhone}
+                      onChange={(event) => updateField('mpesaPhone', event.target.value)}
+                      placeholder="e.g. 0712345678"
                       required
                     />
                   </label>

@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(tokenKey));
   const [currentUser, setCurrentUser] = useState(() => {
     const stored = localStorage.getItem(userKey);
-    return stored ? JSON.parse(stored) : null;
+    return stored ? userFromApi(JSON.parse(stored)) : null;
   });
   const saveSession = ({ token: nextToken, refreshToken, user }) => {
     const nextUser = userFromApi(user);
@@ -29,10 +29,29 @@ export function AuthProvider({ children }) {
     try { return { ok: true, user: saveSession(await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })) }; }
     catch (err) { return { ok: false, message: err.message }; }
   };
-  const signUp = async ({ name, email, password, role }) => {
+  const signUp = async ({ name, email, password, role, vehicle, licensePlate, driverLicense, mpesaPhone }) => {
     try {
       const backendRole = role === 'driver' ? 'driver' : 'passenger';
-      return { ok: true, user: saveSession(await api('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role: backendRole }) })) };
+      const session = await api('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, role: backendRole }) });
+      const savedUser = saveSession(session);
+
+      // Save driver-specific details immediately after registration
+      if (backendRole === 'driver' && (vehicle || licensePlate || driverLicense || mpesaPhone)) {
+        try {
+          const updatedUser = userFromApi(await api('/users/me', {
+            token: session.token,
+            method: 'PUT',
+            body: JSON.stringify({ vehicleModel: vehicle, licensePlate, licenseNumber: driverLicense, mpesaPhone }),
+          }));
+          localStorage.setItem(userKey, JSON.stringify(updatedUser));
+          setCurrentUser(updatedUser);
+          return { ok: true, user: updatedUser };
+        } catch {
+          // Profile update failed but account was created — still proceed
+        }
+      }
+
+      return { ok: true, user: savedUser };
     } catch (err) { return { ok: false, message: err.message }; }
   };
   const logout = async () => {

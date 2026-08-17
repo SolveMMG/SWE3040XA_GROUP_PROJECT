@@ -14,6 +14,7 @@ export default function ProfilePage() {
     photoUrl: currentUser.photoUrl || '',
     vehicleModel: currentUser.vehicleModel || '',
     licensePlate: currentUser.licensePlate || '',
+    licenseNumber: currentUser.licenseNumber || currentUser.license_number || '',
     mpesaPhone: currentUser.mpesaPhone || '',
   });
 
@@ -147,6 +148,16 @@ export default function ProfilePage() {
                   />
                 </label>
               </div>
+
+              <label>
+                Driver Licence Number
+                <input
+                  type="text"
+                  value={form.licenseNumber}
+                  onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
+                  placeholder="e.g. DL123456"
+                />
+              </label>
 
               <label>
                 M-Pesa Payout Phone Number

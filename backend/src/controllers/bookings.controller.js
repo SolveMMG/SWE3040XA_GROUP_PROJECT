@@ -1,7 +1,8 @@
-const bookingModel = require('../models/booking.model');
-const rideModel    = require('../models/ride.model');
-const userModel    = require('../models/user.model');
-const { sendPush } = require('../services/firebase.service');
+const bookingModel   = require('../models/booking.model');
+const rideModel      = require('../models/ride.model');
+const userModel      = require('../models/user.model');
+const { sendPush }   = require('../services/firebase.service');
+const emailService   = require('../services/email.service');
 
 const parseIntOrNull = (v) => {
   const n = parseInt(v, 10);
@@ -87,6 +88,19 @@ const create = async(req, res, next) => {
     userModel.getFcmToken(driverId)
       .then((fcmToken) => sendPush(fcmToken, 'New Booking Request', `Someone wants to book ${seatsN} seat(s) on your ride`))
       .catch(() => {});
+
+    userModel.findById(req.user.userId).then((passenger) => {
+      if (passenger?.email) {
+        emailService.bookingConfirmation(passenger.email, {
+          passengerName: passenger.name,
+          driverName:    ride.driver?.name || 'Driver',
+          origin:        ride.origin,
+          destination:   ride.destination,
+          seats:         seatsN,
+          total:         totalPrice,
+        }).catch(() => {});
+      }
+    }).catch(() => {});
 
     return res.status(201).json(created);
   } catch (err) { next(err); }

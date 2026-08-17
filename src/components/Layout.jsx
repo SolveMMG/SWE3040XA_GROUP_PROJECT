@@ -91,6 +91,7 @@ export default function Layout() {
       <footer className="footer">
         <span>© 2026 RideConnect</span>
         <span>Smart carpooling & ride-sharing in Nairobi</span>
+        <NavLink to="/help" style={{ color: 'inherit', opacity: 0.7, fontSize: 13 }}>Help & FAQ</NavLink>
       </footer>
     </div>
   );

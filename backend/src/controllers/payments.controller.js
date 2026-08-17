@@ -2,7 +2,8 @@ const paymentModel = require('../models/payment.model');
 const bookingModel = require('../models/booking.model');
 const userModel    = require('../models/user.model');
 const mpesaService = require('../services/mpesa.service');
-const { sendPush } = require('../services/firebase.service');
+const { sendPush }   = require('../services/firebase.service');
+const emailService   = require('../services/email.service');
 
 const parseIntOrNull = (v) => {
   const n = parseInt(v, 10);
@@ -119,6 +120,12 @@ const initiateStkPush = async(req, res, next) => {
               userModel.getFcmToken(paidBooking.passenger.id)
                 .then((t) => sendPush(t, 'Payment Confirmed', `KES ${paidPayment.amount} received. Your ride is confirmed!`))
                 .catch(() => {});
+              userModel.findById(paidBooking.passenger.id).then((p) => {
+                if (p?.email) emailService.paymentReceipt(p.email, {
+                  passengerName: p.name, mpesaRef, amount: paidPayment.amount,
+                  origin: paidBooking.ride?.origin || '', destination: paidBooking.ride?.destination || '',
+                }).catch(() => {});
+              }).catch(() => {});
             }
             if (paidBooking?.driver?.id) {
               userModel.getFcmToken(paidBooking.driver.id)

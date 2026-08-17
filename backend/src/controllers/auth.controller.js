@@ -1,6 +1,7 @@
 const userModel      = require('../models/user.model');
 const authTokenModel = require('../models/authToken.model');
 const tokenService   = require('../services/token.service');
+const emailService   = require('../services/email.service');
 const bcrypt = require('bcryptjs');
 
 const issueTokens = async(user) => ({
@@ -23,6 +24,7 @@ const register = async(req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await userModel.create({ name: name.trim(), email: normalizedEmail, photoUrl: null, passwordHash, isApproved: role !== 'driver' });
     const updated = await userModel.update(user.id, { role });
+    emailService.welcome(normalizedEmail, name.trim()).catch(() => {});
     return res.status(201).json({ user: updated, ...(await issueTokens(updated)) });
   } catch (err) { next(err); }
 };
@@ -36,6 +38,9 @@ const login = async(req, res, next) => {
     const user = await userModel.findAuthByEmail(email.trim().toLowerCase());
     if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect' } });
+    }
+    if (user.is_suspended) {
+      return res.status(403).json({ error: { code: 'ACCOUNT_SUSPENDED', message: 'Your account has been suspended. Contact support.' } });
     }
     const profile = await userModel.findById(user.id);
     return res.json({ user: profile, ...(await issueTokens(profile)) });

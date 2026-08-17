@@ -23,13 +23,15 @@ export async function api(path, { token, ...options } = {}) {
 
 export const userFromApi = (user = {}) => ({
   ...user,
-  id:           user?.id ?? null,
-  name:         user?.name || 'Kenyan Driver',
-  photoUrl:     user?.photoUrl     ?? user?.photo_url     ?? '',
-  rating:       user?.avgRating    ?? user?.avg_rating    ?? '4.9',
-  vehicleModel: user?.vehicleModel ?? user?.vehicle_model ?? '',
-  licensePlate: user?.licensePlate ?? user?.license_plate ?? '',
-  mpesaPhone:   user?.mpesaPhone   ?? user?.mpesa_phone   ?? '',
+  id:            user?.id ?? null,
+  name:          user?.name || 'Kenyan Driver',
+  photoUrl:      user?.photoUrl      ?? user?.photo_url      ?? '',
+  rating:        user?.avgRating     ?? user?.avg_rating     ?? '4.9',
+  vehicleModel:  user?.vehicleModel  ?? user?.vehicle_model  ?? '',
+  licensePlate:  user?.licensePlate  ?? user?.license_plate  ?? '',
+  licenseNumber: user?.licenseNumber ?? user?.license_number ?? '',
+  mpesaPhone:    user?.mpesaPhone    ?? user?.mpesa_phone    ?? '',
+  isApproved:    user?.isApproved    ?? user?.is_approved    ?? true,
 });
 
 export const rideFromApi = (ride = {}) => {
